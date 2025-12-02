@@ -7,4 +7,3 @@ type MenuDishes struct {
     Sort   int
     Status int
 }
-

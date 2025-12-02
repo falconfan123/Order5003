@@ -8,4 +8,3 @@ type Dishes struct {
     Stock    int
     Status   int
 }
-
