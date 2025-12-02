@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"Order5003/internal/models"
 	"Order5003/internal/store"
 	"encoding/json"
 	"net/http"
@@ -8,11 +9,11 @@ import (
 
 // UserHandler 处理用户相关的HTTP请求
 type UserHandler struct {
-	store *store.MemoryStore
+	store store.Store
 }
 
 // NewUserHandler 创建新的用户处理器
-func NewUserHandler(store *store.MemoryStore) *UserHandler {
+func NewUserHandler(store store.Store) *UserHandler {
 	return &UserHandler{store: store}
 }
 
@@ -33,24 +34,20 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 检查用户是否存在
-	user, err := h.store.GetUserByUsername(loginRequest.Username)
+	shop, err := h.store.GetShopByName(loginRequest.Username)
 	if err != nil {
 		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 		return
 	}
-
-	// 简单比较密码（实际应用中应该使用密码哈希）
-	if user.Password != loginRequest.Password {
+	if shop.Password != loginRequest.Password {
 		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 		return
 	}
 
-	// 登录成功，返回用户信息（不包含密码）
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"id":       user.ID,
-		"username": user.Username,
-		"role":     user.Role,
+		"id":       shop.ID,
+		"username": shop.ShopName,
+		"role":     models.UserRoleAdmin,
 	})
 }

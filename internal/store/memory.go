@@ -15,6 +15,7 @@ type MemoryStore struct {
     menuItems map[int]models.MenuItem
     orders    map[int]models.Order
     users     map[int]models.User
+    shops     map[string]models.Shop
     nextMenuItemID int
     nextOrderID    int
     nextUserID     int
@@ -26,6 +27,7 @@ func NewMemoryStore() *MemoryStore {
         menuItems:      make(map[int]models.MenuItem),
         orders:         make(map[int]models.Order),
         users:          make(map[int]models.User),
+        shops:          make(map[string]models.Shop),
         nextMenuItemID: 1,
         nextOrderID:    1,
         nextUserID:     1,
@@ -105,6 +107,14 @@ func (s *MemoryStore) seedData() {
     admin.ID = s.nextUserID
     s.users[s.nextUserID] = admin
     s.nextUserID++
+
+    s.shops["admin"] = models.Shop{
+        ID:        1,
+        ShopName:  "admin",
+        Password:  "password",
+        CreatedAt: time.Now(),
+        UpdatedAt: time.Now(),
+    }
 }
 
 // GetAllMenuItems 获取所有菜单项目
@@ -244,6 +254,16 @@ func (s *MemoryStore) GetUserByUsername(username string) (models.User, error) {
         }
     }
     return models.User{}, errors.New("user not found")
+}
+
+func (s *MemoryStore) GetShopByName(name string) (models.Shop, error) {
+    s.mu.RLock()
+    defer s.mu.RUnlock()
+    sh, ok := s.shops[name]
+    if !ok {
+        return models.Shop{}, errors.New("shop not found")
+    }
+    return sh, nil
 }
 
 // GetRandomTableNumber 生成一个随机的桌号

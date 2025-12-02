@@ -10,11 +10,11 @@ import (
 
 // OrderHandler 处理订单相关的HTTP请求
 type OrderHandler struct {
-    store *store.MemoryStore
+    store store.Store
 }
 
 // NewOrderHandler 创建新的订单处理器
-func NewOrderHandler(store *store.MemoryStore) *OrderHandler {
+func NewOrderHandler(store store.Store) *OrderHandler {
     return &OrderHandler{store: store}
 }
 
