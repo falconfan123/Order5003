@@ -4,7 +4,7 @@ import (
     "encoding/json"
     "net/http"
     "strconv"
-    "Order5003/internal/models"
+    "Order5003/internal/bizmodel"
     "Order5003/internal/store"
 )
 
@@ -25,7 +25,7 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
         return
     }
     
-    var request models.NewOrderRequest
+    var request bizmodel.NewOrderRequest
     if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
         http.Error(w, "Invalid request body", http.StatusBadRequest)
         return
@@ -37,10 +37,9 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
         total += item.Price * float64(item.Quantity)
     }
     
-    order := models.Order{
-        TableNumber: request.TableNumber,
-        Items:       request.Items,
-        Total:       total,
+    order := bizmodel.Order{
+        Items: request.Items,
+        Total: total,
     }
     
     createdOrder := h.store.CreateOrder(order)
@@ -102,7 +101,7 @@ func (h *OrderHandler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request)
     }
     
     var statusUpdate struct {
-        Status models.OrderStatus `json:"status"`
+        Status bizmodel.OrderStatus `json:"status"`
     }
     
     if err := json.NewDecoder(r.Body).Decode(&statusUpdate); err != nil {
@@ -120,15 +119,4 @@ func (h *OrderHandler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request)
     json.NewEncoder(w).Encode(updatedOrder)
 }
 
-// GetRandomTableNumber 获取随机桌号（用于顾客点餐）
-func (h *OrderHandler) GetRandomTableNumber(w http.ResponseWriter, r *http.Request) {
-    if r.Method != http.MethodGet {
-        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-        return
-    }
-    
-    tableNumber := h.store.GetRandomTableNumber()
-    
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]string{"table_number": tableNumber})
-}
+// 已移除桌号相关接口

@@ -1,4 +1,4 @@
-package models
+package bizmodel
 
 import "time"
 
@@ -12,3 +12,4 @@ type Shop struct {
     CreatedAt     *time.Time `json:"created_at"`
     Password      string     `json:"password"`
 }
+

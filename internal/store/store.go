@@ -1,20 +1,20 @@
 package store
 
-import "Order5003/internal/models"
+import "Order5003/internal/bizmodel"
 
 type Store interface {
-	GetAllMenuItems() []models.Menu
-	GetMenuItemByID(id int) (models.Menu, error)
-	CreateMenuItem(item models.Menu) models.Menu
-	UpdateMenuItem(id int, item models.Menu) (models.Menu, error)
-	DeleteMenuItem(id int) error
-	CreateOrder(order models.Order) models.Order
-	GetOrderByID(id int) (models.Order, error)
-	GetAllOrders() []models.Order
-	UpdateOrderStatus(id int, status models.OrderStatus) (models.Order, error)
-	GetUserByUsername(username string) (models.User, error)
-	GetUserByID(id int) (models.User, error)
-	GetShopByName(name string) (models.Shop, error)
-	GetDelivererByName(name string) (models.Deliverers, error)
-	GetRandomTableNumber() string
+    GetAllMenuItems() []bizmodel.Menu
+    GetMenuItemByID(id int) (bizmodel.Menu, error)
+    CreateMenuItem(item bizmodel.Menu) bizmodel.Menu
+    UpdateMenuItem(id int, item bizmodel.Menu) (bizmodel.Menu, error)
+    DeleteMenuItem(id int) error
+    CreateOrder(order bizmodel.Order) bizmodel.Order
+    GetOrderByID(id int) (bizmodel.Order, error)
+    GetAllOrders() []bizmodel.Order
+    UpdateOrderStatus(id int, status bizmodel.OrderStatus) (bizmodel.Order, error)
+    GetUserByUsername(username string) (bizmodel.User, error)
+    GetUserByID(id int) (bizmodel.User, error)
+    GetShopByName(name string) (bizmodel.Shop, error)
+    GetDelivererByName(name string) (bizmodel.Deliverers, error)
+    GetAllShops() ([]bizmodel.Shop, error)
 }

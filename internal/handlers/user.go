@@ -24,7 +24,7 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var loginRequest struct {
-		UserName string `json:"user_name"`
+		Username string `json:"username"`
 		Password string `json:"password"`
 	}
 
@@ -33,7 +33,7 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.store.GetUserByUsername(loginRequest.UserName)
+	user, err := h.store.GetUserByUsername(loginRequest.Username)
 	if err != nil {
 		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 		return
@@ -46,6 +46,6 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"id":       user.ID,
-		"nickname": user.Username,
+		"username": user.Username,
 	})
 }

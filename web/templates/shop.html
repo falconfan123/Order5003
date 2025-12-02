@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>点餐系统 - 商家端</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .container { display: flex; flex-wrap: wrap; gap: 20px; }
+        .sidebar { flex: 1; min-width: 200px; border: 1px solid #ddd; padding: 20px; border-radius: 5px; }
+        .content { flex: 3; min-width: 300px; }
+        .tab { padding: 10px 20px; margin-bottom: 10px; cursor: pointer; border: 1px solid #ddd; border-radius: 3px; background-color: #f0f0f0; }
+        .tab.active { background-color: #2196F3; color: white; }
+        .tab-content { display: none; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .tab-content.active { display: block; }
+        .order-item { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
+        .order-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .order-details { margin-left: 20px; }
+        .status-select { padding: 5px; }
+        .menu-item { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .action-buttons { display: flex; gap: 10px; }
+        .edit-btn { background-color: #FFC107; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px; }
+        .delete-btn { background-color: #f44336; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px; }
+        .add-menu-item { background-color: #4CAF50; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 3px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; box-sizing: border-box; }
+        .submit-btn { background-color: #2196F3; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 3px; }
+        .login-form { max-width: 400px; margin: 100px auto; padding: 30px; border: 1px solid #ddd; border-radius: 5px; }
+        #logout-btn { margin-top: 20px; padding: 10px; width: 100%; background-color: #f44336; color: white; border: none; cursor: pointer; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div id="login-container" class="login-form">
+        <h2>商家登录</h2>
+        <div class="form-group">
+            <label for="username">用户名</label>
+            <input type="text" id="username" placeholder="请输入用户名" value="admin">
+        </div>
+        <div class="form-group">
+            <label for="password">密码</label>
+            <input type="password" id="password" placeholder="请输入密码" value="admin">
+        </div>
+        <button class="submit-btn" onclick="login()">登录</button>
+    </div>
+
+    <div id="app-container" style="display: none;">
+        <h1>点餐系统 - 商家管理后台</h1>
+        <div class="container">
+            <div class="sidebar">
+                <div class="tab active" onclick="switchTab('orders')">订单管理</div>
+                <div class="tab" onclick="switchTab('menu')">菜单管理</div>
+                <div class="tab" onclick="switchTab('revenue')">营收统计</div>
+                <button id="logout-btn" onclick="logout()">退出登录</button>
+            </div>
+            <div class="content">
+                <div id="orders-tab" class="tab-content active">
+                    <h2>订单管理</h2>
+                    <div id="orders-container"></div>
+                </div>
+                <div id="menu-tab" class="tab-content">
+                    <h2>菜单管理</h2>
+                    <button class="add-menu-item" onclick="showAddMenuItemForm()">添加菜品</button>
+                    <div id="menu-container"></div>
+                </div>
+                <div id="revenue-tab" class="tab-content">
+                    <h2>营收统计</h2>
+                    <div id="revenue-container">
+                        <p>本系统暂未实现详细的营收统计功能。</p>
+                        <p>基本数据可以在订单管理页面查看。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="menu-item-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
+        <div style="background-color: white; padding: 30px; border-radius: 5px; max-width: 500px; width: 100%;">
+            <h2 id="modal-title">添加菜品</h2>
+            <form id="menu-item-form">
+                <input type="hidden" id="menu-item-id">
+                <div class="form-group">
+                    <label for="menu-item-name">菜品名称</label>
+                    <input type="text" id="menu-item-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="menu-item-description">菜品描述</label>
+                    <textarea id="menu-item-description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="menu-item-price">价格</label>
+                    <input type="number" id="menu-item-price" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="menu-item-category">分类</label>
+                    <input type="text" id="menu-item-category" required>
+                </div>
+                <div class="form-group">
+                    <label for="menu-item-available">是否可售</label>
+                    <select id="menu-item-available">
+                        <option value="true">是</option>
+                        <option value="false">否</option>
+                    </select>
+                </div>
+                <button type="submit" class="submit-btn">保存</button>
+                <button type="button" onclick="closeMenuItemModal()">取消</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let refreshInterval = null;
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            fetch('/shop/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({username, password}) })
+            .then(response => { if (!response.ok) throw new Error('登录失败'); return response.json(); })
+            .then(data => {
+                currentUser = data;
+                document.getElementById('login-container').style.display = 'none';
+                document.getElementById('app-container').style.display = 'block';
+                loadOrders();
+                loadMenu();
+                startRefreshInterval();
+            })
+            .catch(error => { alert('用户名或密码错误'); console.error('登录失败:', error); });
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('app-container').style.display = 'none';
+            document.getElementById('login-container').style.display = 'block';
+            if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null; }
+        }
+
+        function switchTab(tabName) {
+            const tabContents = document.querySelectorAll('.tab-content'); tabContents.forEach(c => c.classList.remove('active'));
+            const tabs = document.querySelectorAll('.tab'); tabs.forEach(t => t.classList.remove('active'));
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            if (tabName === 'orders') loadOrders(); else if (tabName === 'menu') loadMenu();
+        }
+
+        function loadOrders() {
+            fetch('/api/orders/all')
+                .then(response => response.json())
+                .then(orders => { const c = document.getElementById('orders-container'); c.innerHTML = orders.length ? '' : '<p>暂无订单</p>'; })
+                .catch(error => console.error('加载订单失败:', error));
+        }
+
+        function loadMenu() { fetch('/api/menu').then(r => r.json()).then(items => { const c = document.getElementById('menu-container'); c.innerHTML = ''; items.forEach(item => { const div = document.createElement('div'); div.className = 'menu-item'; div.innerHTML = `<div><h3>${item.name}</h3><p>${item.description||''}</p><p>价格: ¥${item.price.toFixed(2)}</p></div><div class="action-buttons"><button class="edit-btn" onclick="editMenuItem(${item.id})">编辑</button><button class="delete-btn" onclick="deleteMenuItem(${item.id})">删除</button></div>`; c.appendChild(div); }); }); }
+
+        function showAddMenuItemForm() { document.getElementById('menu-item-modal').style.display = 'flex'; document.getElementById('modal-title').textContent = '添加菜品'; document.getElementById('menu-item-form').reset(); }
+        function closeMenuItemModal() { document.getElementById('menu-item-modal').style.display = 'none'; }
+        function editMenuItem(id) { document.getElementById('menu-item-modal').style.display = 'flex'; document.getElementById('modal-title').textContent = '编辑菜品'; }
+        function deleteMenuItem(id) { fetch(`/api/menu?id=${id}`, { method:'DELETE' }).then(r => { if (!r.ok) throw new Error(); loadMenu(); }).catch(() => alert('删除失败')); }
+        function startRefreshInterval() { refreshInterval = setInterval(loadOrders, 10000); }
+    </script>
+</body>
+</html>

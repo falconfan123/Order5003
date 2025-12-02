@@ -1,4 +1,4 @@
-package models
+package bizmodel
 
 type MenuDishes struct {
     ID     int
@@ -7,3 +7,4 @@ type MenuDishes struct {
     Sort   int
     Status int
 }
+

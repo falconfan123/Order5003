@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>点餐系统 - 用户端</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1 { text-align: center; }
+        .container { display: flex; flex-wrap: wrap; gap: 20px; }
+        .menu-section { flex: 2; min-width: 300px; }
+        .shops-section { flex: 2; min-width: 300px; max-height: 70vh; overflow-y: auto; }
+        .order-section { flex: 1; min-width: 300px; border: 1px solid #ddd; padding: 20px; border-radius: 5px; }
+        .menu-item { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .menu-item h3 { margin: 0; }
+        .category { margin-top: 30px; }
+        .quantity-control { display: flex; align-items: center; gap: 10px; }
+        .quantity-btn { background-color: #f0f0f0; border: 1px solid #ddd; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; }
+        .add-to-order { background-color: #4CAF50; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 3px; }
+        .submit-order { width: 100%; background-color: #2196F3; color: white; border: none; padding: 15px; cursor: pointer; font-size: 16px; border-radius: 5px; margin-top: 20px; }
+        .order-item { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .remove-item { color: #f44336; cursor: pointer; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+        .modal-content { background-color: white; padding: 30px; border-radius: 5px; max-width: 500px; width: 100%; }
+        .close-btn { float: right; font-size: 20px; cursor: pointer; }
+        #order-status { margin-top: 20px; padding: 10px; background-color: #f0f0f0; border-radius: 5px; }
+        #login-section { max-width: 400px; margin: 40px auto; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        #login-section h2 { text-align: center; }
+        #login-section .order-item { justify-content: center; }
+        #login-section .submit-order { width: auto; padding: 10px 24px; }
+    </style>
+ </head>
+<body>
+    <h1>点餐系统</h1>
+    <div id="login-section" class="order-section">
+        <h2>登录</h2>
+        <div class="order-item">
+            <label style="width:100%">用户名
+                <input id="username" type="text" style="width:100%; padding:8px" value="admin" />
+            </label>
+        </div>
+        <div class="order-item">
+            <label style="width:100%">密码
+                <input id="password" type="password" style="width:100%; padding:8px" value="admin" />
+            </label>
+        </div>
+        <button class="submit-order" onclick="loginUser()">登录</button>
+        <div id="login-error" style="color:red; margin-top:10px;"></div>
+    </div>
+    <div id="app" class="container" style="display:none;">
+        <div class="shops-section">
+            <h2>商家</h2>
+            <div id="shops-container"></div>
+        </div>
+        <div class="order-section">
+            <h2>您的订单</h2>
+            <div id="order-items"></div>
+            <div id="order-total"></div>
+            <button class="submit-order" onclick="submitOrder()">提交订单</button>
+            <div id="order-status"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="order-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h2 id="modal-title">订单信息</h2>
+            <p id="modal-message"></p>
+            <button onclick="closeModal()">确定</button>
+        </div>
+    </div>
+
+    <script>
+        let shops = [];
+        let orderItems = [];
+        let currentOrderId = null;
+        let statusCheckInterval = null;
+        let currentUser = null;
+
+        function init() {
+            document.querySelector('h1').textContent = '点餐系统 - 商家列表';
+            fetch('/shop/getall', {
+                method: 'POST', // 必须加，否则默认 GET
+                headers: {
+                    'Content-Type': 'application/json', // 若后端需要 JSON 格式（可选，根据后端需求）
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`请求失败：${response.status}`);
+                    return response.json();
+            })
+            .then(data => { shops = Array.isArray(data) ? data : []; renderShops(); })
+            .catch((err) => { 
+                console.error('获取商家列表错误：', err);
+                shops = []; renderShops(); 
+            });
+        }
+
+        function loginUser() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            fetch('/user/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => { if (!res.ok) throw new Error('登录失败'); return res.json(); })
+            .then(data => {
+                currentUser = data;
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('app').style.display = 'flex';
+                init();
+            })
+            .catch(() => { document.getElementById('login-error').textContent = '登录失败，请检查用户名和密码'; });
+        }
+
+        function renderShops() {
+            const shopsContainer = document.getElementById('shops-container');
+            shopsContainer.innerHTML = '';
+            if (!shops.length) { shopsContainer.innerHTML = '<p style="width:100%; text-align:center;">暂无商家数据</p>'; return; }
+            shops.forEach(shop => {
+                const statusText = shop.status === 1 ? '<span style="color:green;">营业中</span>' : '<span style="color:gray;">休息中</span>';
+                const formatTime = shop.created_at ? new Date(shop.created_at).toLocaleString() : '暂无';
+                const deliveryRange = (shop.delivery_range || 0).toFixed(1);
+                const deliveryFee = (shop.delivery_fee || 0).toFixed(2);
+                const card = document.createElement('div');
+                card.style = 'border: 1px solid #ddd; border-radius: 8px; padding: 15px; width: 280px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
+                card.innerHTML = `
+                    <h3 style="margin:0 0 10px 0; color:#2196F3;">${shop.shop_name}</h3>
+                    <p><strong>商家ID：</strong>${shop.shop_id}</p>
+                    <p><strong>配送范围：</strong>${deliveryRange} km</p>
+                    <p><strong>配送费：</strong>¥${deliveryFee}</p>
+                    <p><strong>营业时间：</strong>${shop.business_hours}</p>
+                    <p><strong>状态：</strong>${statusText}</p>
+                    <p style="font-size:12px; color:#666; margin-top:10px;">入驻时间：${formatTime}</p>
+                    <button style="margin-top:15px; padding:8px 16px; background:#4CAF50; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="selectShop(${shop.shop_id}, '${shop.shop_name}')">选择该商家点餐</button>
+                `;
+                shopsContainer.appendChild(card);
+            });
+        }
+
+        function selectShop(shopId, shopName) {
+            localStorage.setItem('selectedShopId', shopId);
+            localStorage.setItem('selectedShopName', shopName);
+            alert(`已选择商家：${shopName}（ID：${shopId}）`);
+        }
+
+        function addToOrder(itemId) {
+            const item = menuItems.find(i => i.id === itemId);
+            if (!item) return;
+            const existing = orderItems.find(i => i.id === itemId);
+            if (existing) existing.quantity += 1; else orderItems.push({ ...item, quantity: 1 });
+            renderOrder();
+        }
+
+        function renderOrder() {
+            const orderItemsDiv = document.getElementById('order-items');
+            orderItemsDiv.innerHTML = '';
+            let total = 0;
+            orderItems.forEach(item => {
+                total += item.price * item.quantity;
+                const div = document.createElement('div');
+                div.className = 'order-item';
+                div.innerHTML = `
+                    <span>${item.name} x ${item.quantity}</span>
+                    <span>¥${(item.price * item.quantity).toFixed(2)}</span>
+                    <span class="remove-item" onclick="removeFromOrder(${item.id})">移除</span>
+                `;
+                orderItemsDiv.appendChild(div);
+            });
+            document.getElementById('order-total').textContent = `总计: ¥${total.toFixed(2)}`;
+        }
+
+        function removeFromOrder(itemId) {
+            orderItems = orderItems.filter(i => i.id !== itemId);
+            renderOrder();
+        }
+
+        function submitOrder() {
+            if (orderItems.length === 0) { alert('请先添加菜品再提交订单'); return; }
+            const payload = { items: orderItems.map(i => ({ id: i.id, quantity: i.quantity })) };
+            fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            .then(res => res.json())
+            .then(data => { currentOrderId = data.order_id; document.getElementById('order-status').textContent = '订单已提交，等待制作'; })
+            .catch(() => { alert('提交订单失败'); });
+        }
+
+        function closeModal() { document.getElementById('order-modal').style.display = 'none'; }
+    </script>
+</body>
+</html>

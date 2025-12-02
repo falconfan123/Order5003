@@ -1,12 +1,12 @@
 package handlers
 
 import (
-	"encoding/json"
-	"net/http"
-	"strconv"
+    "encoding/json"
+    "net/http"
+    "strconv"
 
-	"Order5003/internal/models"
-	"Order5003/internal/store"
+    "Order5003/internal/bizmodel"
+    "Order5003/internal/store"
 )
 
 type MenuHandler struct {
@@ -52,7 +52,7 @@ func (h *MenuHandler) CreateMenuItem(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	var item models.Menu
+    var item bizmodel.Menu
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
@@ -74,7 +74,7 @@ func (h *MenuHandler) UpdateMenuItem(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid menu item ID", http.StatusBadRequest)
 		return
 	}
-	var item models.Menu
+    var item bizmodel.Menu
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return

@@ -1,4 +1,4 @@
-package models
+package bizmodel
 
 type Dishes struct {
     DishID   int
@@ -8,3 +8,4 @@ type Dishes struct {
     Stock    int
     Status   int
 }
+
