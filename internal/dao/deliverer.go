@@ -1,15 +1,11 @@
 package dao
 
-import (
-	"Order5003/internal/models"
+import "gorm.io/gorm"
 
-	"gorm.io/gorm"
-)
-
-func GetDelivererByName(db *gorm.DB, name string) (*models.Deliverers, error) {
-	var e models.Deliverers
-	if err := db.Where("name = ?", name).First(&e).Error; err != nil {
-		return nil, err
-	}
-	return &e, nil
+func GetDelivererByName(db *gorm.DB, name string) (*DelivererEntity, error) {
+    var e DelivererEntity
+    if err := db.Where("name = ?", name).First(&e).Error; err != nil {
+        return nil, err
+    }
+    return &e, nil
 }

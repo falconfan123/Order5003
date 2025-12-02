@@ -3,7 +3,6 @@ package store
 import (
 	"Order5003/internal/dao"
 	"Order5003/internal/models"
-	"encoding/json"
 	"errors"
 	"strconv"
 
@@ -33,7 +32,7 @@ func (s *GormStore) GetAllMenuItems() []models.Menu {
 	out := make([]models.Menu, 0, len(list))
 	for _, e := range list {
 		out = append(out, models.Menu{
-			MenuID: e.ID,
+			MenuID: e.DishID,
 		})
 	}
 	return out
@@ -45,16 +44,12 @@ func (s *GormStore) GetMenuItemByID(id int) (models.Menu, error) {
 		return models.Menu{}, errors.New("menu item not found")
 	}
 	return models.Menu{
-		MenuID: e.ID,
+		MenuID: e.DishID,
 	}, nil
 }
 
 func (s *GormStore) CreateMenuItem(item models.Menu) models.Menu {
-	e := &dao.DishEntity{
-		IsAvailable: func() int {
-			return 1
-		}(),
-	}
+	e := &dao.DishEntity{}
 	if _, err := dao.CreateDish(s.db, e); err != nil {
 		return item
 	}
@@ -62,11 +57,7 @@ func (s *GormStore) CreateMenuItem(item models.Menu) models.Menu {
 }
 
 func (s *GormStore) UpdateMenuItem(id int, updatedItem models.Menu) (models.Menu, error) {
-	e := &dao.DishEntity{
-		IsAvailable: func() int {
-			return 1
-		}(),
-	}
+	e := &dao.DishEntity{}
 	if _, err := dao.UpdateDish(s.db, id, e); err != nil {
 		return models.Menu{}, errors.New("menu item not found")
 	}
@@ -81,17 +72,11 @@ func (s *GormStore) DeleteMenuItem(id int) error {
 }
 
 func (s *GormStore) CreateOrder(order models.Order) models.Order {
-	itemsJSON, _ := json.Marshal(order.Items)
-	e := &dao.OrderEntity{
-		TableNumber: order.TableNumber,
-		ItemsJSON:   string(itemsJSON),
-		Total:       order.Total,
-		Status:      string(order.Status),
-	}
+	e := &dao.OrderEntity{}
 	if _, err := dao.CreateOrder(s.db, e); err != nil {
 		return order
 	}
-	order.ID = e.ID
+	order.ID = e.OrderID
 	return order
 }
 
@@ -101,15 +86,11 @@ func (s *GormStore) GetOrderByID(id int) (models.Order, error) {
 		return models.Order{}, errors.New("order not found")
 	}
 	var items []models.OrderItem
-	_ = json.Unmarshal([]byte(e.ItemsJSON), &items)
 	return models.Order{
-		ID:          e.ID,
-		TableNumber: e.TableNumber,
-		Items:       items,
-		Total:       e.Total,
-		Status:      models.OrderStatus(e.Status),
-		CreatedAt:   e.CreatedAt,
-		UpdatedAt:   e.UpdatedAt,
+		ID:        e.OrderID,
+		Items:     items,
+		Status:    models.OrderStatus(e.Status),
+		CreatedAt: e.CreatedAt,
 	}, nil
 }
 
@@ -121,15 +102,11 @@ func (s *GormStore) GetAllOrders() []models.Order {
 	out := make([]models.Order, 0, len(list))
 	for _, e := range list {
 		var items []models.OrderItem
-		_ = json.Unmarshal([]byte(e.ItemsJSON), &items)
 		out = append(out, models.Order{
-			ID:          e.ID,
-			TableNumber: e.TableNumber,
-			Items:       items,
-			Total:       e.Total,
-			Status:      models.OrderStatus(e.Status),
-			CreatedAt:   e.CreatedAt,
-			UpdatedAt:   e.UpdatedAt,
+			ID:        e.OrderID,
+			Items:     items,
+			Status:    models.OrderStatus(e.Status),
+			CreatedAt: e.CreatedAt,
 		})
 	}
 	return out
@@ -143,17 +120,18 @@ func (s *GormStore) UpdateOrderStatus(id int, status models.OrderStatus) (models
 }
 
 func (s *GormStore) GetUserByUsername(username string) (models.User, error) {
-	e, err := dao.GetUserByUsername(s.db, username)
+	return models.User{}, errors.New("unsupported: username login")
+}
+
+func (s *GormStore) GetUserByID(id int) (models.User, error) {
+	e, err := dao.GetUserByID(s.db, id)
 	if err != nil {
 		return models.User{}, errors.New("user not found")
 	}
 	return models.User{
-		ID:        e.ID,
-		Username:  e.Username,
-		Password:  e.Password,
-		Role:      models.UserRole(e.Role),
-		CreatedAt: e.CreatedAt,
-		UpdatedAt: e.UpdatedAt,
+		ID:       e.UserID,
+		Username: e.UserName,
+		Password: e.Password,
 	}, nil
 }
 
@@ -163,11 +141,13 @@ func (s *GormStore) GetShopByName(name string) (models.Shop, error) {
 		return models.Shop{}, errors.New("shop not found")
 	}
 	return models.Shop{
-		ID:        e.ShopID,
-		ShopName:  e.ShopName,
-		Password:  e.Password,
-		CreatedAt: e.CreateTime,
-		UpdatedAt: e.CreateTime,
+		ShopID:        e.ShopID,
+		ShopName:      e.ShopName,
+		DeliveryRange: e.DeliveryRange,
+		DeliveryFee:   e.DeliveryFee,
+		BusinessHours: e.BusinessHours,
+		CreatedAt:     &e.CreatedAt,
+		Password:      e.Password,
 	}, nil
 }
 
@@ -180,7 +160,6 @@ func (s *GormStore) GetDelivererByName(name string) (models.Deliverers, error) {
 		DelivererID:     e.DelivererID,
 		Name:            e.Name,
 		Phone:           e.Phone,
-		Status:          e.Status,
 		ResponsibleArea: e.ResponsibleArea,
 		Password:        e.Password,
 	}, nil

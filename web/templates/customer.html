@@ -119,7 +119,22 @@
 </head>
 <body>
     <h1>点餐系统</h1>
-    <div class="container">
+    <div id="login-section" class="order-section" style="max-width:400px; margin:20px 0;">
+        <h2>登录</h2>
+        <div class="order-item">
+            <label style="width:100%">用户ID
+                <input id="user_id" type="number" style="width:100%; padding:8px" />
+            </label>
+        </div>
+        <div class="order-item">
+            <label style="width:100%">密码
+                <input id="password" type="password" style="width:100%; padding:8px" />
+            </label>
+        </div>
+        <button class="submit-order" onclick="loginUser()">登录</button>
+        <div id="login-error" style="color:red; margin-top:10px;"></div>
+    </div>
+    <div id="app" class="container" style="display:none;">
         <div class="menu-section">
             <h2>菜单</h2>
             <div id="menu-container"></div>
@@ -149,6 +164,7 @@
         let tableNumber = '';
         let currentOrderId = null;
         let statusCheckInterval = null;
+        let currentUser = null;
 
         // 初始化
         function init() {
@@ -169,6 +185,29 @@
                     renderMenu();
                 })
                 .catch(error => console.error('获取菜单失败:', error));
+        }
+
+        function loginUser() {
+            const user_id = parseInt(document.getElementById('user_id').value, 10);
+            const password = document.getElementById('password').value;
+            fetch('/user/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id, password })
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('登录失败');
+                return res.json();
+            })
+            .then(data => {
+                currentUser = data;
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('app').style.display = 'flex';
+                init();
+            })
+            .catch(() => {
+                document.getElementById('login-error').textContent = '登录失败，请检查ID和密码';
+            });
         }
 
         // 渲染菜单

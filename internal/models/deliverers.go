@@ -1,12 +1,10 @@
 package models
 
 type Deliverers struct {
-	DelivererID     int    `gorm:"column:deliverer_id;primaryKey"`
-	Name            string `gorm:"column:name"`
-	Phone           string `gorm:"column:phone"`
-	Status          int    `gorm:"column:status"`
-	ResponsibleArea string `gorm:"column:responsible_area"`
-	Password        string `gorm:"column:password"`
+	DelivererID     int
+	Name            string
+	Phone           string
+	Status          int
+	ResponsibleArea string
+	Password        string
 }
-
-func (Deliverers) TableName() string { return "deliverers" }

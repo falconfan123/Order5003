@@ -13,6 +13,7 @@ type Store interface {
 	GetAllOrders() []models.Order
 	UpdateOrderStatus(id int, status models.OrderStatus) (models.Order, error)
 	GetUserByUsername(username string) (models.User, error)
+	GetUserByID(id int) (models.User, error)
 	GetShopByName(name string) (models.Shop, error)
 	GetDelivererByName(name string) (models.Deliverers, error)
 	GetRandomTableNumber() string

@@ -18,24 +18,22 @@ func main() {
 		dsn = strings.TrimSpace(string(data))
 	}
 	log.Println("MySQL DSN:", dsn)
-	if dsn != "" {
-		gs, err := store.NewGormStore(dsn)
-		if err == nil {
-			s = store.Store(gs)
-			log.Println("使用 MySQL(GORM) 数据库")
-		} else {
-			log.Println("连接 MySQL 失败，回退到内存存储:", err)
-			s = store.NewMemoryStore()
-		}
-	} else {
-		s = store.NewMemoryStore()
-		log.Println("未配置 MySQL，使用内存存储")
+	if dsn == "" {
+		log.Fatal("未配置 MySQL DSN，无法启动")
 	}
+	gs, err := store.NewGormStore(dsn)
+	if err != nil {
+		log.Fatal("连接 MySQL 失败:", err)
+	}
+	s = gs
+	log.Println("使用 MySQL(GORM) 数据库")
 
 	// 创建处理器实例
 	menuHandler := handlers.NewMenuHandler(s)
 	orderHandler := handlers.NewOrderHandler(s)
 	userHandler := handlers.NewUserHandler(s)
+	shopHandler := handlers.NewShopHandler(s)
+	deliverHandler := handlers.NewDeliverHandler(s)
 
 	r := gin.Default()
 
@@ -45,11 +43,11 @@ func main() {
 
 	shopG := r.Group("/shop")
 	shopG.GET("", func(c *gin.Context) { c.File("web/templates/merchant.html") })
-	shopG.POST("/login", func(c *gin.Context) { userHandler.LoginShop(c.Writer, c.Request) })
+	shopG.POST("/login", func(c *gin.Context) { shopHandler.Login(c.Writer, c.Request) })
 
 	deliverG := r.Group("/deliver")
 	deliverG.GET("", func(c *gin.Context) { c.File("web/templates/deliverer.html") })
-	deliverG.POST("/login", func(c *gin.Context) { userHandler.LoginDeliverer(c.Writer, c.Request) })
+	deliverG.POST("/login", func(c *gin.Context) { deliverHandler.Login(c.Writer, c.Request) })
 
 	r.GET("/api/menu", func(c *gin.Context) { menuHandler.GetAllMenuItems(c.Writer, c.Request) })
 	r.Any("/api/menu-item", func(c *gin.Context) {
