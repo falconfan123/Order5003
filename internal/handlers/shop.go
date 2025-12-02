@@ -1,17 +1,17 @@
 package handlers
 
 import (
-	"Order5003/internal/store"
-	"encoding/json"
-	"net/http"
+    "Order5003/internal/service"
+    "encoding/json"
+    "net/http"
 )
 
 type ShopHandler struct {
-	store store.Store
+    svc service.ShopService
 }
 
-func NewShopHandler(store store.Store) *ShopHandler {
-	return &ShopHandler{store: store}
+func NewShopHandler(svc service.ShopService) *ShopHandler {
+    return &ShopHandler{svc: svc}
 }
 
 func (h *ShopHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +27,7 @@ func (h *ShopHandler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	shop, err := h.store.GetShopByName(loginRequest.Username)
+    shop, err := h.svc.GetShopByName(loginRequest.Username)
 	if err != nil {
 		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 		return
@@ -48,7 +48,7 @@ func (h *ShopHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	shops, err := h.store.GetAllShops()
+    shops, err := h.svc.GetAllShops()
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return

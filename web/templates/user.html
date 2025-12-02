@@ -52,6 +52,10 @@
             <h2>商家</h2>
             <div id="shops-container"></div>
         </div>
+        <div class="menu-section">
+            <h2 id="dishes-title">商家菜品</h2>
+            <div id="dishes-container"></div>
+        </div>
         <div class="order-section">
             <h2>您的订单</h2>
             <div id="order-items"></div>
@@ -72,10 +76,12 @@
 
     <script>
         let shops = [];
-        let orderItems = [];
+        let orderDishes = [];
+        let menuItems = [];
         let currentOrderId = null;
         let statusCheckInterval = null;
         let currentUser = null;
+        let currentOrderShopId = null; 
 
         function init() {
             document.querySelector('h1').textContent = '点餐系统 - 商家列表';
@@ -114,50 +120,149 @@
             .catch(() => { document.getElementById('login-error').textContent = '登录失败，请检查用户名和密码'; });
         }
 
-        function renderShops() {
-            const shopsContainer = document.getElementById('shops-container');
-            shopsContainer.innerHTML = '';
-            if (!shops.length) { shopsContainer.innerHTML = '<p style="width:100%; text-align:center;">暂无商家数据</p>'; return; }
-            shops.forEach(shop => {
-                const statusText = shop.status === 1 ? '<span style="color:green;">营业中</span>' : '<span style="color:gray;">休息中</span>';
-                const formatTime = shop.created_at ? new Date(shop.created_at).toLocaleString() : '暂无';
-                const deliveryRange = (shop.delivery_range || 0).toFixed(1);
-                const deliveryFee = (shop.delivery_fee || 0).toFixed(2);
-                const card = document.createElement('div');
-                card.style = 'border: 1px solid #ddd; border-radius: 8px; padding: 15px; width: 280px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
-                card.innerHTML = `
-                    <h3 style="margin:0 0 10px 0; color:#2196F3;">${shop.shop_name}</h3>
-                    <p><strong>商家ID：</strong>${shop.shop_id}</p>
-                    <p><strong>配送范围：</strong>${deliveryRange} km</p>
-                    <p><strong>配送费：</strong>¥${deliveryFee}</p>
-                    <p><strong>营业时间：</strong>${shop.business_hours}</p>
-                    <p><strong>状态：</strong>${statusText}</p>
-                    <p style="font-size:12px; color:#666; margin-top:10px;">入驻时间：${formatTime}</p>
-                    <button style="margin-top:15px; padding:8px 16px; background:#4CAF50; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="selectShop(${shop.shop_id}, '${shop.shop_name}')">选择该商家点餐</button>
-                `;
-                shopsContainer.appendChild(card);
-            });
+        function renderShops() { 
+            const shopsContainer = document.getElementById('shops-container'); 
+            shopsContainer.innerHTML = ''; 
+            if (!shops.length) { 
+                shopsContainer.innerHTML = '<p style="width:100%; text-align:center;">暂无商家数据</p>'; 
+                return; 
+            } 
+ 
+            shops.forEach(shop => { 
+                const statusText = shop.status === 1 ? '<span style="color:green;">营业中</span>' : '<span style="color:gray;">休息中</span>'; 
+                const formatTime = shop.created_at ? new Date(shop.created_at).toLocaleString() : '暂无'; 
+                const deliveryRange = (shop.delivery_range || 0).toFixed(1); 
+                const deliveryFee = (shop.delivery_fee || 0).toFixed(2); 
+                const card = document.createElement('div'); 
+                card.style = 'border: 1px solid #ddd; border-radius: 8px; padding: 15px; width: 280px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'; 
+ 
+                // 关键：控制按钮样式和点击事件 
+                let btnStyle = 'margin-top:15px; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;'; 
+                let btnOnclick = `selectShop(${shop.shop_id}, '${shop.shop_name}')`; 
+                
+                // 有未提交订单 + 当前商家不是订单所属商家 → 按钮禁用 
+                if (orderDishes.length > 0 && shop.shop_id !== currentOrderShopId) { 
+                    btnStyle += 'background:#ccc; color:#999; cursor:not-allowed;'; // 灰化样式 
+                    btnOnclick = `showSwitchShopTip()`; // 点击触发提示 
+                } else { 
+                    // 正常状态（营业中绿色，休息中灰色） 
+                    btnStyle += shop.status === 1 ? 'background:#4CAF50; color:white;' : 'background:#ccc; color:#999; cursor:not-allowed;'; 
+                } 
+ 
+                card.innerHTML = ` 
+                    <h3 style="margin:0 0 10px 0; color:#2196F3;">${shop.shop_name}</h3> 
+                    <p><strong>商家ID：</strong>${shop.shop_id}</p> 
+                    <p><strong>配送范围：</strong>${deliveryRange} km</p> 
+                    <p><strong>配送费：</strong>¥${deliveryFee}</p> 
+                    <p><strong>营业时间：</strong>${shop.business_hours}</p> 
+                    <p><strong>状态：</strong>${statusText}</p> 
+                    <p style="font-size:12px; color:#666; margin-top:10px;">入驻时间：${formatTime}</p> 
+                    <button style="${btnStyle}" onclick="${btnOnclick}">选择该商家点餐</button> 
+                `; 
+                shopsContainer.appendChild(card); 
+            }); 
+        }
+        function showSwitchShopTip() { 
+            alert('当前有未提交的订单，请先提交或清空后再切换商家'); 
         }
 
         function selectShop(shopId, shopName) {
+            // 关键：双重拦截——有未提交订单且切换其他商家，直接提示
+            if (orderDishes.length > 0 && shopId !== currentOrderShopId) {
+                showSwitchShopTip();
+                return;
+            }
+            const currentShop = shops.find(shop => shop.shop_id === shopId);
+            if (!currentShop) {
+                alert('未找到该商家');
+                return;
+            }
+            if (currentShop.status === 0) {
+                document.getElementById('dishes-title').textContent = `商家菜品 - ${shopName}`;
+                const dishesContainer = document.getElementById('dishes-container');
+                dishesContainer.innerHTML = '<p style="color:#999; text-align:center; font-size:16px; padding:50px 0;">该商家休息中，不可点餐</p>';
+                return;
+            }
             localStorage.setItem('selectedShopId', shopId);
             localStorage.setItem('selectedShopName', shopName);
-            alert(`已选择商家：${shopName}（ID：${shopId}）`);
+            document.getElementById('dishes-title').textContent = `商家菜品 - ${shopName}`;
+            loadDishesForShop(shopId);
+        }
+
+        function loadDishesForShop(shopId) {
+            const dishesContainer = document.getElementById('dishes-container');
+            dishesContainer.innerHTML = '<p style="color:#666; text-align:center;">加载菜品中...</p>';
+
+            fetch('/menudish/getallmenudishes', { // 路径和后端一致
+                method: 'POST', // 明确指定 POST
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ shop_id: shopId }) // 参数放在 body 里
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`请求失败（${response.status}）`);
+                return response.json();
+            })
+            .then(res => {
+                const dishList = res.data || [];
+                menuItems = Array.isArray(dishList) ? dishList.map(normalizeDish) : [];
+               renderDishes();
+            })
+            .catch(err => {
+                dishesContainer.innerHTML = `<p style="color:red; text-align:center;">菜品加载失败：${err.message}</p>`;
+                console.error('菜品加载错误：', err);
+            });
+        }
+
+        function normalizeDish(item) {
+            const id = item.dish_id ?? item.dishId ?? item.id ?? item.MenuID ?? item.menu_id ?? item.DishID ?? item.DishId;
+            const name = item.dish_name ?? item.dishName ?? item.DishName ?? item.name ?? item.MenuName ?? (id ? `菜品#${id}` : '菜品');
+            const price = item.price ?? item.Price ?? item.dish_price ?? item.dishPrice ?? 0;
+            const shopId = item.shop_id ?? item.ShopID ?? item.shopId ?? item.ShopId ?? null;
+            return { id, name, price, shop_id: shopId };
+        }
+
+        function renderDishes() {
+            const c = document.getElementById('dishes-container');
+            c.innerHTML = '';
+            if (!menuItems.length) { c.innerHTML = '<p style="color:#666">请选择商家以查看菜品</p>'; return; }
+            menuItems.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'menu-item';
+                div.innerHTML = `<div><h3>${item.name}</h3><p>价格: ¥${Number(item.price).toFixed(2)}</p></div><button class="add-to-order" onclick="addToOrder(${item.id})">加入订单</button>`;
+                c.appendChild(div);
+            });
         }
 
         function addToOrder(itemId) {
             const item = menuItems.find(i => i.id === itemId);
             if (!item) return;
-            const existing = orderItems.find(i => i.id === itemId);
-            if (existing) existing.quantity += 1; else orderItems.push({ ...item, quantity: 1 });
+            // 关键：第一次添加菜品时，绑定当前订单到该商家
+            if (orderDishes.length === 0) {
+                currentOrderShopId = item.shop_id;
+            }
+    
+            const existing = orderDishes.find(i => i.id === itemId);
+            if (existing) existing.quantity += 1; else orderDishes.push({ ...item, quantity: 1 });
             renderOrder();
+            renderShops();
         }
 
         function renderOrder() {
             const orderItemsDiv = document.getElementById('order-items');
             orderItemsDiv.innerHTML = '';
             let total = 0;
-            orderItems.forEach(item => {
+
+            // 关键：显示当前订单所属商家名（有未提交订单时）
+            if (currentOrderShopId) {
+                const currentShop = shops.find(shop => shop.shop_id === currentOrderShopId);
+                const shopName = currentShop ? currentShop.shop_name : '未知商家';
+                const shopHeader = document.createElement('div');
+                shopHeader.style = 'border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; font-weight: bold; color: #2196F3;';
+                shopHeader.textContent = `当前商家：${shopName}`;
+                orderItemsDiv.appendChild(shopHeader);
+            }
+
+            orderDishes.forEach(item => {
                 total += item.price * item.quantity;
                 const div = document.createElement('div');
                 div.className = 'order-item';
@@ -172,13 +277,18 @@
         }
 
         function removeFromOrder(itemId) {
-            orderItems = orderItems.filter(i => i.id !== itemId);
+            orderDishes = orderDishes.filter(i => i.id !== itemId);
+            // 关键：订单为空时，清空当前订单商家ID，恢复其他商家按钮
+            if (orderDishes.length === 0) {
+                currentOrderShopId = null;
+                renderShops(); // 刷新商家列表
+            }
             renderOrder();
         }
 
         function submitOrder() {
-            if (orderItems.length === 0) { alert('请先添加菜品再提交订单'); return; }
-            const payload = { items: orderItems.map(i => ({ id: i.id, quantity: i.quantity })) };
+            if (orderDishes.length === 0) { alert('请先添加菜品再提交订单'); return; }
+            const payload = { dishes: orderDishes.map(i => ({ id: i.id, quantity: i.quantity })) };
             fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
             .then(res => res.json())
             .then(data => { currentOrderId = data.order_id; document.getElementById('order-status').textContent = '订单已提交，等待制作'; })

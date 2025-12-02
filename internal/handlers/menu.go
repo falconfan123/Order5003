@@ -6,15 +6,15 @@ import (
     "strconv"
 
     "Order5003/internal/bizmodel"
-    "Order5003/internal/store"
+    "Order5003/internal/service"
 )
 
 type MenuHandler struct {
-	store store.Store
+    svc service.MenuService
 }
 
-func NewMenuHandler(store store.Store) *MenuHandler {
-	return &MenuHandler{store: store}
+func NewMenuHandler(svc service.MenuService) *MenuHandler {
+    return &MenuHandler{svc: svc}
 }
 
 func (h *MenuHandler) GetAllMenuItems(w http.ResponseWriter, r *http.Request) {
@@ -22,7 +22,7 @@ func (h *MenuHandler) GetAllMenuItems(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	items := h.store.GetAllMenuItems()
+    items := h.svc.GetAllMenuItems()
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(items)
 }
@@ -38,7 +38,7 @@ func (h *MenuHandler) GetMenuItemByID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid menu item ID", http.StatusBadRequest)
 		return
 	}
-	item, err := h.store.GetMenuItemByID(id)
+    item, err := h.svc.GetMenuItemByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -57,7 +57,7 @@ func (h *MenuHandler) CreateMenuItem(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	createdItem := h.store.CreateMenuItem(item)
+    createdItem := h.svc.CreateMenuItem(item)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(createdItem)
@@ -79,7 +79,7 @@ func (h *MenuHandler) UpdateMenuItem(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	updatedItem, err := h.store.UpdateMenuItem(id, item)
+    updatedItem, err := h.svc.UpdateMenuItem(id, item)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -99,9 +99,9 @@ func (h *MenuHandler) DeleteMenuItem(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid menu item ID", http.StatusBadRequest)
 		return
 	}
-	if err := h.store.DeleteMenuItem(id); err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
+    if err := h.svc.DeleteMenuItem(id); err != nil {
+        http.Error(w, err.Error(), http.StatusNotFound)
+        return
+    }
 	w.WriteHeader(http.StatusNoContent)
 }

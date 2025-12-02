@@ -4,7 +4,8 @@ import (
 	"Order5003/internal/api"
 	"Order5003/internal/handlers"
 	"Order5003/internal/logger"
-	"Order5003/internal/store"
+	"Order5003/internal/service"
+	"Order5003/internal/service/impl"
 	"os"
 	"strings"
 
@@ -12,7 +13,11 @@ import (
 )
 
 func main() {
-	var s store.Store
+	var menuSvc service.MenuService
+	var orderSvc service.OrderService
+	var userSvc service.UserService
+	var shopSvc service.ShopService
+	var deliverSvc service.DelivererService
 	var dsn string
 	data, err := os.ReadFile("config/mysql_dsn.txt")
 	if err == nil {
@@ -24,15 +29,19 @@ func main() {
 		logger.Error("未配置 MySQL DSN，无法启动")
 		return
 	}
-	gs, err := store.NewGormStore(dsn)
+	gs, err := impl.NewGormStore(dsn)
 	if err != nil {
 		logger.Error("连接 MySQL 失败:", err)
 		return
 	}
-	s = gs
+	menuSvc = gs
+	orderSvc = gs
+	userSvc = gs
+	shopSvc = gs
+	deliverSvc = gs
 	logger.Info("使用 MySQL(GORM) 数据库")
 
-	appHandlers := handlers.NewAppHandlers(s)
+	appHandlers := handlers.NewAppHandlers(menuSvc, orderSvc, userSvc, shopSvc, deliverSvc)
 
 	r := gin.Default()
 

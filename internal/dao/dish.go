@@ -40,3 +40,12 @@ func UpdateDish(db *gorm.DB, id int, e *model.DishEntity) (*model.DishEntity, er
 func DeleteDish(db *gorm.DB, id int) error {
 	return db.Delete(&model.DishEntity{}, id).Error
 }
+
+func GetDishesByIDs(db *gorm.DB, dishIDs []int) ([]model.DishEntity, error) {
+	var dishes []model.DishEntity
+	err := db.Where("dish_id IN (?) AND status = 1", dishIDs).Find(&dishes).Error
+	if err != nil {
+		return nil, err
+	}
+	return dishes, nil
+}

@@ -12,4 +12,5 @@ func RegisterAllRoutes(r *gin.Engine, h *handlers.AppHandlers) {
 	RegisterDeliverRoutes(r, h.Deliver)
 	RegisterMenuRoutes(r, h.Menu)
 	RegisterOrderRoutes(r, h.Order)
+	RegisterMenuDishRoutes(r, h.MenuDish)
 }
