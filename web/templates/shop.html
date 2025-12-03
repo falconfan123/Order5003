@@ -28,6 +28,18 @@
         .submit-btn { background-color: #2196F3; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 3px; }
         .login-form { max-width: 400px; margin: 100px auto; padding: 30px; border: 1px solid #ddd; border-radius: 5px; }
         #logout-btn { margin-top: 20px; padding: 10px; width: 100%; background-color: #f44336; color: white; border: none; cursor: pointer; border-radius: 3px; }
+        /* 新增店铺ID显示样式 */
+        #shop-id-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            font-size: 14px;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -44,8 +56,11 @@
         <button class="submit-btn" onclick="login()">登录</button>
     </div>
 
-    <div id="app-container" style="display: none;">
+    <!-- 修改：给容器加relative定位，用于shopid绝对定位 -->
+    <div id="app-container" style="display: none; position: relative;">
         <h1>点餐系统 - 商家管理后台</h1>
+        <!-- 新增：店铺ID显示框 -->
+        <div id="shop-id-display"></div>
         <div class="container">
             <div class="sidebar">
                 <div class="tab active" onclick="switchTab('orders')">订单管理</div>
@@ -110,53 +125,174 @@
 
     <script>
         let currentUser = null;
+        let currentShopId = null; // 新增：全局保存店铺ID
         let refreshInterval = null;
 
         function login() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            fetch('/shop/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({username, password}) })
-            .then(response => { if (!response.ok) throw new Error('登录失败'); return response.json(); })
-            .then(data => {
+            fetch('/shop/login', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({username, password}) 
+            })
+            .then(response => { 
+                if (!response.ok) throw new Error('登录失败'); 
+                return response.json(); 
+            })
+            .then(data => {            
+                console.log('后端登录接口返回数据：', data);
+
                 currentUser = data;
+                // 核心修改1：保存店铺ID（假设后端返回的data包含shopid字段）
+                 currentShopId = data.shopid || data.shopId || data.shop_id;
+
+                // 核心修复2：校验店铺ID是否存在，给出明确提示
+                if (!currentShopId) {
+                    alert('登录成功，但未获取到店铺ID！请联系管理员绑定店铺');
+                    return;
+                }
+                   
+                // 渲染店铺ID到右上角
+                document.getElementById('shop-id-display').textContent = `当前店铺ID: ${currentShopId}`;
+                
                 document.getElementById('login-container').style.display = 'none';
                 document.getElementById('app-container').style.display = 'block';
                 loadOrders();
                 loadMenu();
                 startRefreshInterval();
             })
-            .catch(error => { alert('用户名或密码错误'); console.error('登录失败:', error); });
+            .catch(error => { 
+                alert('用户名或密码错误'); 
+                console.error('登录失败:', error); 
+            });
         }
 
         function logout() {
             currentUser = null;
+            currentShopId = null; // 退出时清空店铺ID
             document.getElementById('app-container').style.display = 'none';
             document.getElementById('login-container').style.display = 'block';
-            if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null; }
+            if (refreshInterval) { 
+                clearInterval(refreshInterval); 
+                refreshInterval = null; 
+            }
         }
 
         function switchTab(tabName) {
-            const tabContents = document.querySelectorAll('.tab-content'); tabContents.forEach(c => c.classList.remove('active'));
-            const tabs = document.querySelectorAll('.tab'); tabs.forEach(t => t.classList.remove('active'));
+            const tabContents = document.querySelectorAll('.tab-content'); 
+            tabContents.forEach(c => c.classList.remove('active'));
+            const tabs = document.querySelectorAll('.tab'); 
+            tabs.forEach(t => t.classList.remove('active'));
             document.getElementById(`${tabName}-tab`).classList.add('active');
             document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
-            if (tabName === 'orders') loadOrders(); else if (tabName === 'menu') loadMenu();
+            if (tabName === 'orders') loadOrders(); 
+            else if (tabName === 'menu') loadMenu();
         }
 
+        // 核心修改2：请求订单接口时传递shopid（GET方式拼接query参数）
         function loadOrders() {
-            fetch('/api/orders/all')
-                .then(response => response.json())
-                .then(orders => { const c = document.getElementById('orders-container'); c.innerHTML = orders.length ? '' : '<p>暂无订单</p>'; })
-                .catch(error => console.error('加载订单失败:', error));
+            // 校验店铺ID是否存在
+            if (!currentShopId) {
+                alert('未获取到店铺ID，无法加载订单！');
+                document.getElementById('orders-container').innerHTML = '<p>未获取到店铺ID</p>';
+                return;
+            }
+            // 拼接shopid到请求参数中
+            fetch(`/api/orders/all?shopid=${encodeURIComponent(currentShopId)}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('加载订单失败');
+                    return response.json();
+                })
+                .then(orders => { 
+                    const c = document.getElementById('orders-container'); 
+                    if (orders.length === 0) {
+                        c.innerHTML = '<p>暂无订单</p>';
+                        return;
+                    }
+                    // 补充：渲染订单列表（原代码未渲染，此处添加基础渲染）
+                    c.innerHTML = '';
+                    orders.forEach(order => {
+                        const orderItem = document.createElement('div');
+                        orderItem.className = 'order-item';
+                        orderItem.innerHTML = `
+                            <div class="order-header">
+                                <span>订单ID: ${order.id || '未知'}</span>
+                                <select class="status-select" onchange="updateOrderStatus(${order.id}, this.value)">
+                                    <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>待处理</option>
+                                    <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>处理中</option>
+                                    <option value="completed" ${order.status === 'completed' ? 'selected' : ''}>已完成</option>
+                                    <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>已取消</option>
+                                </select>
+                            </div>
+                            <div class="order-details">
+                                <p>用户ID: ${order.userId || '未知'}</p>
+                                <p>菜品: ${order.items?.map(item => `${item.name} x ${item.quantity}`).join(', ') || '无'}</p>
+                                <p>总价: ¥${order.totalPrice?.toFixed(2) || '0.00'}</p>
+                                <p>下单时间: ${order.createTime ? new Date(order.createTime).toLocaleString() : '未知'}</p>
+                            </div>
+                        `;
+                        c.appendChild(orderItem);
+                    });
+                })
+                .catch(error => {
+                    console.error('加载订单失败:', error);
+                    document.getElementById('orders-container').innerHTML = '<p>加载订单失败，请重试</p>';
+                });
         }
 
-        function loadMenu() { fetch('/api/menu').then(r => r.json()).then(items => { const c = document.getElementById('menu-container'); c.innerHTML = ''; items.forEach(item => { const div = document.createElement('div'); div.className = 'menu-item'; div.innerHTML = `<div><h3>${item.name}</h3><p>${item.description||''}</p><p>价格: ¥${item.price.toFixed(2)}</p></div><div class="action-buttons"><button class="edit-btn" onclick="editMenuItem(${item.id})">编辑</button><button class="delete-btn" onclick="deleteMenuItem(${item.id})">删除</button></div>`; c.appendChild(div); }); }); }
+        // 新增：订单状态更新函数（预留，可根据后端接口完善）
+        function updateOrderStatus(orderId, status) {
+            if (!currentShopId) {
+                alert('未获取到店铺ID，无法更新订单状态！');
+                return;
+            }
+            fetch(`/api/orders/update?shopid=${encodeURIComponent(currentShopId)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId, status })
+            }).then(response => {
+                if (!response.ok) throw new Error('更新失败');
+                loadOrders(); // 刷新订单列表
+            }).catch(() => alert('订单状态更新失败'));
+        }
 
-        function showAddMenuItemForm() { document.getElementById('menu-item-modal').style.display = 'flex'; document.getElementById('modal-title').textContent = '添加菜品'; document.getElementById('menu-item-form').reset(); }
-        function closeMenuItemModal() { document.getElementById('menu-item-modal').style.display = 'none'; }
-        function editMenuItem(id) { document.getElementById('menu-item-modal').style.display = 'flex'; document.getElementById('modal-title').textContent = '编辑菜品'; }
-        function deleteMenuItem(id) { fetch(`/api/menu?id=${id}`, { method:'DELETE' }).then(r => { if (!r.ok) throw new Error(); loadMenu(); }).catch(() => alert('删除失败')); }
-        function startRefreshInterval() { refreshInterval = setInterval(loadOrders, 10000); }
+        function loadMenu() { 
+            fetch('/api/menu').then(r => r.json()).then(items => { 
+                const c = document.getElementById('menu-container'); 
+                c.innerHTML = ''; 
+                items.forEach(item => { 
+                    const div = document.createElement('div'); 
+                    div.className = 'menu-item'; 
+                    div.innerHTML = `<div><h3>${item.name}</h3><p>${item.description||''}</p><p>价格: ¥${item.price.toFixed(2)}</p></div><div class="action-buttons"><button class="edit-btn" onclick="editMenuItem(${item.id})">编辑</button><button class="delete-btn" onclick="deleteMenuItem(${item.id})">删除</button></div>`; 
+                    c.appendChild(div); 
+                }); 
+            }); 
+        }
+
+        function showAddMenuItemForm() { 
+            document.getElementById('menu-item-modal').style.display = 'flex'; 
+            document.getElementById('modal-title').textContent = '添加菜品'; 
+            document.getElementById('menu-item-form').reset(); 
+        }
+        function closeMenuItemModal() { 
+            document.getElementById('menu-item-modal').style.display = 'none'; 
+        }
+        function editMenuItem(id) { 
+            document.getElementById('menu-item-modal').style.display = 'flex'; 
+            document.getElementById('modal-title').textContent = '编辑菜品'; 
+        }
+        function deleteMenuItem(id) { 
+            fetch(`/api/menu?id=${id}`, { method:'DELETE' })
+            .then(r => { 
+                if (!r.ok) throw new Error(); 
+                loadMenu(); 
+            })
+            .catch(() => alert('删除失败')); 
+        }
+        function startRefreshInterval() { 
+            refreshInterval = setInterval(loadOrders, 10000); 
+        }
     </script>
 </body>
 </html>

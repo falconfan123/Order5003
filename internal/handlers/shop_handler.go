@@ -35,12 +35,12 @@ func (h *ShopHandler) Login(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"id":       shop.ShopID,
+		"shop_id":  shop.ShopID,
 		"username": shop.ShopName,
 	})
 }
 
-func (h *ShopHandler) GetAll(c *gin.Context) { //通过shop id 能够查到该用户的所有订单
+func (h *ShopHandler) GetAll(c *gin.Context) {
 	if c.Request.Method != http.MethodPost {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
 		return
