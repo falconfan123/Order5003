@@ -3,7 +3,10 @@ package impl
 import (
 	"Order5003/internal/bizmodel"
 	"Order5003/internal/dao"
+	"Order5003/internal/logger"
 	"errors"
+
+	"go.uber.org/zap"
 )
 
 func (s *GormStore) GetShopByName(name string) (bizmodel.Shop, error) {
@@ -24,6 +27,7 @@ func (s *GormStore) GetShopByName(name string) (bizmodel.Shop, error) {
 
 func (s *GormStore) GetAllShops() ([]bizmodel.Shop, error) {
 	list, err := dao.ListShops(s.db)
+	logger.Info("list shops", zap.Any("list", list))
 	if err != nil {
 		return []bizmodel.Shop{}, errors.New("shops not found")
 	}
