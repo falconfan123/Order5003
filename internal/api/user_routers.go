@@ -7,7 +7,7 @@ import (
 )
 
 func RegisterUserRoutes(r *gin.Engine, h *handlers.UserHandler) {
-	g := r.Group("/user")
-	g.GET("", func(c *gin.Context) { c.File("web/templates/user.html") })
-	g.POST("/login", func(c *gin.Context) { h.LoginUser(c.Writer, c.Request) })
+    g := r.Group("/user")
+    g.GET("", func(c *gin.Context) { c.File("web/templates/user.html") })
+    g.POST("/login", func(c *gin.Context) { h.LoginUser(c) })
 }

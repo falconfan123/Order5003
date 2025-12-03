@@ -2,8 +2,9 @@ package handlers
 
 import (
     "Order5003/internal/service"
-    "encoding/json"
     "net/http"
+
+    "github.com/gin-gonic/gin"
 )
 
 type DeliverHandler struct {
@@ -14,30 +15,29 @@ func NewDeliverHandler(svc service.DelivererService) *DeliverHandler {
     return &DeliverHandler{svc: svc}
 }
 
-func (h *DeliverHandler) Login(w http.ResponseWriter, r *http.Request) {
-    if r.Method != http.MethodPost {
-        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+func (h *DeliverHandler) Login(c *gin.Context) {
+    if c.Request.Method != http.MethodPost {
+        c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
         return
     }
     var loginRequest struct {
         Username string `json:"username"`
         Password string `json:"password"`
     }
-    if err := json.NewDecoder(r.Body).Decode(&loginRequest); err != nil {
-        http.Error(w, "Invalid request body", http.StatusBadRequest)
+    if err := c.ShouldBindJSON(&loginRequest); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
         return
     }
     d, err := h.svc.GetDelivererByName(loginRequest.Username)
     if err != nil {
-        http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
         return
     }
     if d.Password != loginRequest.Password {
-        http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
         return
     }
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]interface{}{
+    c.JSON(http.StatusOK, gin.H{
         "id":       d.DelivererID,
         "username": d.Name,
     })

@@ -1,6 +1,10 @@
 package bizmodel
 
-import "time"
+import (
+	"time"
+
+	"github.com/shopspring/decimal"
+)
 
 type OrderStatus string
 
@@ -12,24 +16,21 @@ const (
 	OrderStatusCancelled OrderStatus = "cancelled"
 )
 
-type OrderItem struct {
-	MenuItemID int     `json:"menu_item_id"`
-	Quantity   int     `json:"quantity"`
-	Price      float64 `json:"price"`
-	Name       string  `json:"name"`
+type OrderDishItem struct {
+	DishId   int `json:"dish_id"`
+	Quantity int `json:"quantity"`
 }
 
 type Order struct {
-	ID          int         `json:"id"`
-	TableNumber string      `json:"table_number"`
-	Items       []OrderItem `json:"items"`
-	Total       float64     `json:"total"`
-	Status      OrderStatus `json:"status"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
+	OrderID     int             `json:"order_id"`     // 订单ID（自增）
+	UserID      int             `json:"user_id"`      // 下单用户ID
+	ShopID      int             `json:"shop_id"`      // 所属商家ID
+	TotalAmount decimal.Decimal `json:"total_amount"` // 订单总金额
+	Status      string          `json:"status"`       // 订单状态
+	CreatedAt   time.Time       `json:"created_at"`   // 创建时间
 }
 
 type NewOrderRequest struct {
-	TableNumber string      `json:"table_number"`
-	Items       []OrderItem `json:"items"`
+	UserID int             `json:"user_id"`
+	Dishes []OrderDishItem `json:"items"`
 }

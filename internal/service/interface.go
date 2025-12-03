@@ -1,11 +1,15 @@
 package service
 
-import "Order5003/internal/bizmodel"
+import (
+	"Order5003/internal/bizmodel"
+	"context"
+
+	"gorm.io/gorm"
+)
 
 type MenuService interface {
 	GetAllMenuItems() []bizmodel.Menu
 	GetMenuItemByID(id int) (bizmodel.Menu, error)
-	CreateMenuItem(item bizmodel.Menu) bizmodel.Menu
 	UpdateMenuItem(id int, item bizmodel.Menu) (bizmodel.Menu, error)
 	DeleteMenuItem(id int) error
 }
@@ -15,6 +19,10 @@ type OrderService interface {
 	GetOrderByID(id int) (bizmodel.Order, error)
 	GetAllOrders() []bizmodel.Order
 	UpdateOrderStatus(id int, status bizmodel.OrderStatus) (bizmodel.Order, error)
+	WithTransaction(ctx context.Context, fn func(tx *gorm.DB) error) error
+	GetDishByID(ctx context.Context, tx *gorm.DB, dishID int) (*bizmodel.Dishes, error)
+	CreateOrderMaster(ctx context.Context, tx *gorm.DB, orderMaster *bizmodel.Order) (int, error)
+	CreateOrderDish(ctx context.Context, tx *gorm.DB, orderDish *bizmodel.OrderDishDetail) error
 }
 
 type ShopService interface {

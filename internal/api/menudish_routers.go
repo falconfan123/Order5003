@@ -7,10 +7,10 @@ import (
 )
 
 func RegisterMenuDishRoutes(r *gin.Engine, h *handlers.MenuDishHandler) {
-	menudishGroup := r.Group("/menudish")
-	{
-		menudishGroup.POST("/getallmenudishes", func(c *gin.Context) {
-			h.GetAllMenuDishesByShopID(c.Writer, c.Request)
-		})
-	}
+    menudishGroup := r.Group("/menudish")
+    {
+        menudishGroup.POST("/getallmenudishes", func(c *gin.Context) {
+            h.GetAllMenuDishesByShopID(c)
+        })
+    }
 }

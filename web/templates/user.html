@@ -3,299 +3,399 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>点餐系统 - 用户端</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
-        h1 { text-align: center; }
-        .container { display: flex; flex-wrap: wrap; gap: 20px; }
-        .menu-section { flex: 2; min-width: 300px; }
-        .shops-section { flex: 2; min-width: 300px; max-height: 70vh; overflow-y: auto; }
-        .order-section { flex: 1; min-width: 300px; border: 1px solid #ddd; padding: 20px; border-radius: 5px; }
-        .menu-item { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
-        .menu-item h3 { margin: 0; }
-        .category { margin-top: 30px; }
-        .quantity-control { display: flex; align-items: center; gap: 10px; }
-        .quantity-btn { background-color: #f0f0f0; border: 1px solid #ddd; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; }
-        .add-to-order { background-color: #4CAF50; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 3px; }
-        .submit-order { width: 100%; background-color: #2196F3; color: white; border: none; padding: 15px; cursor: pointer; font-size: 16px; border-radius: 5px; margin-top: 20px; }
-        .order-item { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .remove-item { color: #f44336; cursor: pointer; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
-        .modal-content { background-color: white; padding: 30px; border-radius: 5px; max-width: 500px; width: 100%; }
-        .close-btn { float: right; font-size: 20px; cursor: pointer; }
-        #order-status { margin-top: 20px; padding: 10px; background-color: #f0f0f0; border-radius: 5px; }
-        #login-section { max-width: 400px; margin: 40px auto; display: flex; flex-direction: column; align-items: center; text-align: center; }
-        #login-section h2 { text-align: center; }
-        #login-section .order-item { justify-content: center; }
-        #login-section .submit-order { width: auto; padding: 10px 24px; }
-    </style>
- </head>
-<body>
-    <h1>点餐系统</h1>
-    <div id="login-section" class="order-section">
-        <h2>登录</h2>
-        <div class="order-item">
-            <label style="width:100%">用户名
-                <input id="username" type="text" style="width:100%; padding:8px" value="admin" />
-            </label>
-        </div>
-        <div class="order-item">
-            <label style="width:100%">密码
-                <input id="password" type="password" style="width:100%; padding:8px" value="admin" />
-            </label>
-        </div>
-        <button class="submit-order" onclick="loginUser()">登录</button>
-        <div id="login-error" style="color:red; margin-top:10px;"></div>
-    </div>
-    <div id="app" class="container" style="display:none;">
-        <div class="shops-section">
-            <h2>商家</h2>
-            <div id="shops-container"></div>
-        </div>
-        <div class="menu-section">
-            <h2 id="dishes-title">商家菜品</h2>
-            <div id="dishes-container"></div>
-        </div>
-        <div class="order-section">
-            <h2>您的订单</h2>
-            <div id="order-items"></div>
-            <div id="order-total"></div>
-            <button class="submit-order" onclick="submitOrder()">提交订单</button>
-            <div id="order-status"></div>
-        </div>
-    </div>
+    <title>智能点餐系统 - 用户端</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css" />
+    <script src="https://unpkg.com/element-plus/dist/index.full.js"></script>
+    <script src="https://unpkg.com/@element-plus/icons-vue"></script>
 
-    <div class="modal" id="order-modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal()">&times;</span>
-            <h2 id="modal-title">订单信息</h2>
-            <p id="modal-message"></p>
-            <button onclick="closeModal()">确定</button>
+    <style>
+        body { margin: 0; background-color: #f5f7fa; font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif; }
+        .app-container { height: 100vh; display: flex; flex-direction: column; }
+        .login-container { display: flex; justify-content: center; align-items: center; height: 100vh; background: #2d3a4b; }
+        .login-card { width: 400px; padding: 20px; }
+        .header { background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); z-index: 10; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; height: 60px; }
+        .main-layout { height: calc(100vh - 60px); }
+        .shop-list-aside { background: #fff; border-right: 1px solid #e6e6e6; overflow-y: auto; }
+        .menu-main { padding: 20px; overflow-y: auto; background-color: #f5f7fa; }
+        .cart-aside { background: #fff; border-left: 1px solid #e6e6e6; display: flex; flex-direction: column; box-shadow: -2px 0 5px rgba(0,0,0,0.05); }
+        .cart-items { flex: 1; overflow-y: auto; padding: 10px; }
+        .cart-footer { padding: 20px; border-top: 1px solid #ebeef5; background: #fff; }
+        
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        
+        .shop-card { cursor: pointer; transition: all 0.3s; margin-bottom: 10px; border: 1px solid transparent; }
+        .shop-card:hover { transform: translateY(-2px); box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1); }
+        .shop-card.active { border-color: #409EFF; background-color: #ecf5ff; }
+        .shop-card.disabled { opacity: 0.6; cursor: not-allowed; filter: grayscale(1); }
+
+        .dish-card { height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
+        .dish-price { color: #f56c6c; font-size: 18px; font-weight: bold; }
+        
+        .empty-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #909399; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div v-if="!currentUser" class="login-container">
+            <el-card class="login-card">
+                <template #header>
+                    <h2 style="text-align: center; margin: 0; color: #333;">系统登录</h2>
+                </template>
+                <el-form :model="loginForm" @submit.prevent="handleLogin">
+                    <el-form-item>
+                        <el-input v-model="loginForm.username" placeholder="用户名" prefix-icon="User" size="large"></el-input>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-input v-model="loginForm.password" type="password" placeholder="密码" prefix-icon="Lock" size="large" show-password></el-input>
+                    </el-form-item>
+                    <el-button type="primary" style="width: 100%; margin-top: 10px;" size="large" @click="handleLogin" :loading="loading">
+                        登 录
+                    </el-button>
+                </el-form>
+                <div v-if="loginError" style="color: #f56c6c; margin-top: 10px; text-align: center;">{{ loginError }}</div>
+            </el-card>
+        </div>
+
+        <div v-else class="app-container">
+            <header class="header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <el-icon size="24" color="#409EFF"><Food /></el-icon>
+                    <h2 style="margin: 0; font-size: 20px;">在线点餐系统</h2>
+                </div>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <el-tag effect="dark" type="success">用户: {{ currentUser.username || 'Admin' }}</el-tag>
+                    <el-button type="danger" link @click="logout">退出</el-button>
+                </div>
+            </header>
+
+            <el-container class="main-layout">
+                <el-aside width="300px" class="shop-list-aside">
+                    <div style="padding: 15px; border-bottom: 1px solid #eee;">
+                        <h3 style="margin: 0;">商家列表</h3>
+                    </div>
+                    <div v-loading="loadingShops" style="padding: 10px;">
+                        <el-empty v-if="shops.length === 0 && !loadingShops" description="暂无商家"></el-empty>
+                        
+                        <el-card 
+                            v-for="shop in shops" 
+                            :key="shop.shop_id" 
+                            shadow="hover" 
+                            class="shop-card"
+                            :class="{ 
+                                'active': currentShopId === shop.shop_id, 
+                                'disabled': isShopDisabled(shop) 
+                            }"
+                            @click="handleSelectShop(shop)"
+                        >
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <span style="font-weight: bold; font-size: 16px;">{{ shop.shop_name }}</span>
+                                <el-tag size="small" :type="shop.status === 1 ? 'success' : 'info'">
+                                    {{ shop.status === 1 ? '营业中' : '休息中' }}
+                                </el-tag>
+                            </div>
+                            <div style="font-size: 12px; color: #666; margin-top: 8px; line-height: 1.6;">
+                                <div>配送: ¥{{ (shop.delivery_fee || 0).toFixed(2) }} | {{ (shop.delivery_range || 0).toFixed(1) }}km</div>
+                                <div>时间: {{ shop.business_hours }}</div>
+                            </div>
+                        </el-card>
+                    </div>
+                </el-aside>
+
+                <el-main class="menu-main" v-loading="loadingMenu">
+                    <div v-if="!currentShopId" class="empty-placeholder">
+                        <el-icon size="60"><Shop /></el-icon>
+                        <p>请从左侧选择一个商家开始点餐</p>
+                    </div>
+                    
+                    <div v-else>
+                        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                            <h2 style="margin: 0;">{{ currentShopName }} - 菜单</h2>
+                            <el-tag type="info">共 {{ menuItems.length }} 道菜品</el-tag>
+                        </div>
+                        
+                        <el-row :gutter="20">
+                            <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="dish in menuItems" :key="dish.id" style="margin-bottom: 20px;">
+                                <el-card :body-style="{ padding: '0px' }" shadow="hover">
+                                    <div style="padding: 14px;" class="dish-card">
+                                        <div style="font-size: 16px; font-weight: bold; margin-bottom: 10px; height: 40px; overflow: hidden;">{{ dish.name }}</div>
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <span class="dish-price">¥{{ Number(dish.price).toFixed(2) }}</span>
+                                            <el-button type="primary" circle size="small" @click="addToCart(dish)">
+                                                <el-icon><Plus /></el-icon>
+                                            </el-button>
+                                        </div>
+                                    </div>
+                                </el-card>
+                            </el-col>
+                        </el-row>
+                        <el-empty v-if="menuItems.length === 0" description="该商家暂无菜品"></el-empty>
+                    </div>
+                </el-main>
+
+                <el-aside width="320px" class="cart-aside">
+                    <div style="padding: 15px; border-bottom: 1px solid #eee; background: #fafafa; display: flex; align-items: center; justify-content: space-between;">
+                        <h3 style="margin: 0;">当前订单</h3>
+                        <el-button v-if="cart.length > 0" type="danger" link size="small" @click="clearCart">清空</el-button>
+                    </div>
+                    
+                    <div class="cart-items">
+                        <div v-if="cart.length === 0" class="empty-placeholder" style="height: 200px;">
+                            <el-icon size="40"><ShoppingCart /></el-icon>
+                            <p>购物车是空的</p>
+                        </div>
+                        
+                        <div v-else>
+                            <div v-if="currentShopId" style="font-size: 12px; color: #909399; margin-bottom: 10px; text-align: center;">
+                                商家: {{ currentShopName }}
+                            </div>
+                            <div v-for="item in cart" :key="item.id" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 500;">{{ item.name }}</div>
+                                    <div style="color: #999; font-size: 12px;">¥{{ item.price }}</div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <el-button circle size="small" @click="decreaseQuantity(item)">-</el-button>
+                                    <span style="width: 20px; text-align: center;">{{ item.quantity }}</span>
+                                    <el-button circle size="small" @click="increaseQuantity(item)">+</el-button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cart-footer">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 18px; font-weight: bold;">
+                            <span>总计:</span>
+                            <span style="color: #f56c6c;">¥{{ cartTotal }}</span>
+                        </div>
+                        <el-button type="primary" size="large" style="width: 100%;" :disabled="cart.length === 0" @click="submitOrder" :loading="submitting">
+                            立即结算
+                        </el-button>
+                    </div>
+                </el-aside>
+            </el-container>
         </div>
     </div>
 
     <script>
-        let shops = [];
-        let orderDishes = [];
-        let menuItems = [];
-        let currentOrderId = null;
-        let statusCheckInterval = null;
-        let currentUser = null;
-        let currentOrderShopId = null; 
+        const { createApp, ref, reactive, computed, onMounted } = Vue;
+        const { ElMessage, ElMessageBox } = ElementPlus;
+        const { User, Lock, Food, Shop, Plus, ShoppingCart } = ElementPlusIconsVue;
 
-        function init() {
-            document.querySelector('h1').textContent = '点餐系统 - 商家列表';
-            fetch('/shop/getall', {
-                method: 'POST', // 必须加，否则默认 GET
-                headers: {
-                    'Content-Type': 'application/json', // 若后端需要 JSON 格式（可选，根据后端需求）
-                }
-            })
-            .then(response => {
-                if (!response.ok) throw new Error(`请求失败：${response.status}`);
-                    return response.json();
-            })
-            .then(data => { shops = Array.isArray(data) ? data : []; renderShops(); })
-            .catch((err) => { 
-                console.error('获取商家列表错误：', err);
-                shops = []; renderShops(); 
-            });
-        }
-
-        function loginUser() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            fetch('/user/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            })
-            .then(res => { if (!res.ok) throw new Error('登录失败'); return res.json(); })
-            .then(data => {
-                currentUser = data;
-                document.getElementById('login-section').style.display = 'none';
-                document.getElementById('app').style.display = 'flex';
-                init();
-            })
-            .catch(() => { document.getElementById('login-error').textContent = '登录失败，请检查用户名和密码'; });
-        }
-
-        function renderShops() { 
-            const shopsContainer = document.getElementById('shops-container'); 
-            shopsContainer.innerHTML = ''; 
-            if (!shops.length) { 
-                shopsContainer.innerHTML = '<p style="width:100%; text-align:center;">暂无商家数据</p>'; 
-                return; 
-            } 
- 
-            shops.forEach(shop => { 
-                const statusText = shop.status === 1 ? '<span style="color:green;">营业中</span>' : '<span style="color:gray;">休息中</span>'; 
-                const formatTime = shop.created_at ? new Date(shop.created_at).toLocaleString() : '暂无'; 
-                const deliveryRange = (shop.delivery_range || 0).toFixed(1); 
-                const deliveryFee = (shop.delivery_fee || 0).toFixed(2); 
-                const card = document.createElement('div'); 
-                card.style = 'border: 1px solid #ddd; border-radius: 8px; padding: 15px; width: 280px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'; 
- 
-                // 关键：控制按钮样式和点击事件 
-                let btnStyle = 'margin-top:15px; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;'; 
-                let btnOnclick = `selectShop(${shop.shop_id}, '${shop.shop_name}')`; 
+        const app = createApp({
+            components: {
+                User, Lock, Food, Shop, Plus, ShoppingCart
+            },
+            setup() {
+                // --- 状态数据 ---
+                const currentUser = ref(null);
+                const loginForm = reactive({ username: 'admin', password: 'admin' });
+                const loginError = ref('');
+                const loading = ref(false);
                 
-                // 有未提交订单 + 当前商家不是订单所属商家 → 按钮禁用 
-                if (orderDishes.length > 0 && shop.shop_id !== currentOrderShopId) { 
-                    btnStyle += 'background:#ccc; color:#999; cursor:not-allowed;'; // 灰化样式 
-                    btnOnclick = `showSwitchShopTip()`; // 点击触发提示 
-                } else { 
-                    // 正常状态（营业中绿色，休息中灰色） 
-                    btnStyle += shop.status === 1 ? 'background:#4CAF50; color:white;' : 'background:#ccc; color:#999; cursor:not-allowed;'; 
-                } 
- 
-                card.innerHTML = ` 
-                    <h3 style="margin:0 0 10px 0; color:#2196F3;">${shop.shop_name}</h3> 
-                    <p><strong>商家ID：</strong>${shop.shop_id}</p> 
-                    <p><strong>配送范围：</strong>${deliveryRange} km</p> 
-                    <p><strong>配送费：</strong>¥${deliveryFee}</p> 
-                    <p><strong>营业时间：</strong>${shop.business_hours}</p> 
-                    <p><strong>状态：</strong>${statusText}</p> 
-                    <p style="font-size:12px; color:#666; margin-top:10px;">入驻时间：${formatTime}</p> 
-                    <button style="${btnStyle}" onclick="${btnOnclick}">选择该商家点餐</button> 
-                `; 
-                shopsContainer.appendChild(card); 
-            }); 
-        }
-        function showSwitchShopTip() { 
-            alert('当前有未提交的订单，请先提交或清空后再切换商家'); 
-        }
+                const shops = ref([]);
+                const loadingShops = ref(false);
+                const menuItems = ref([]);
+                const loadingMenu = ref(false);
+                
+                const currentShopId = ref(null);
+                const currentShopName = ref('');
+                const cart = ref([]);
+                const submitting = ref(false);
 
-        function selectShop(shopId, shopName) {
-            // 关键：双重拦截——有未提交订单且切换其他商家，直接提示
-            if (orderDishes.length > 0 && shopId !== currentOrderShopId) {
-                showSwitchShopTip();
-                return;
+                // --- 登录逻辑 ---
+                const handleLogin = () => {
+                    loading.value = true;
+                    loginError.value = '';
+                    fetch('/user/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(loginForm)
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('登录失败');
+                        return res.json();
+                    })
+                    .then(data => {
+                        currentUser.value = data;
+                        ElMessage.success('登录成功');
+                        fetchShops();
+                    })
+                    .catch(() => {
+                        loginError.value = '登录失败，请检查用户名和密码';
+                    })
+                    .finally(() => loading.value = false);
+                };
+
+                const logout = () => {
+                    currentUser.value = null;
+                    cart.value = [];
+                    currentShopId.value = null;
+                };
+
+                // --- 商家逻辑 ---
+                const fetchShops = () => {
+                    loadingShops.value = true;
+                    fetch('/shop/getall', {
+                        method: 'POST', // 保持原有接口逻辑
+                        headers: { 'Content-Type': 'application/json' }
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error(res.status);
+                        return res.json();
+                    })
+                    .then(data => {
+                        shops.value = Array.isArray(data) ? data : [];
+                    })
+                    .catch(err => {
+                        ElMessage.error('获取商家列表失败');
+                        console.error(err);
+                    })
+                    .finally(() => loadingShops.value = false);
+                };
+
+                // 判断是否禁用商家（跨店拦截逻辑）
+                const isShopDisabled = (shop) => {
+                    // 如果购物车有东西，且当前商家不是购物车所属商家，则禁用
+                    if (cart.value.length > 0 && currentShopId.value && shop.shop_id !== currentShopId.value) {
+                        return true;
+                    }
+                    return false;
+                };
+
+                const handleSelectShop = (shop) => {
+                    if (isShopDisabled(shop)) {
+                        ElMessageBox.alert('当前有未提交的订单，请先提交或清空后再切换商家', '提示', { confirmButtonText: '确定' });
+                        return;
+                    }
+                    if (shop.status !== 1) {
+                        ElMessage.warning('该商家休息中，无法点餐');
+                        // 可以选择是否允许查看菜单，这里暂时保留原有逻辑：休息中显示提示
+                        // 但为了UI好看，我们可以允许点击，但在菜单区显示休息
+                    }
+                    
+                    currentShopId.value = shop.shop_id;
+                    currentShopName.value = shop.shop_name;
+                    fetchMenu(shop.shop_id);
+                };
+
+                // --- 菜品逻辑 ---
+                const fetchMenu = (shopId) => {
+                    loadingMenu.value = true;
+                    menuItems.value = [];
+                    fetch('/menudish/getallmenudishes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ shop_id: shopId })
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('加载菜品失败');
+                        return res.json();
+                    })
+                    .then(res => {
+                        const list = res.data || [];
+                        menuItems.value = list.map(normalizeDish);
+                    })
+                    .catch(err => {
+                        ElMessage.error('菜品加载失败');
+                        console.error(err);
+                    })
+                    .finally(() => loadingMenu.value = false);
+                };
+
+                // 数据标准化工具函数（保留原有逻辑以适配各种奇葩Key）
+                const normalizeDish = (item) => {
+                    const id = item.dish_id ?? item.dishId ?? item.id ?? item.MenuID ?? item.menu_id ?? item.DishID ?? item.DishId;
+                    const name = item.dish_name ?? item.dishName ?? item.DishName ?? item.name ?? item.MenuName ?? (id ? `菜品#${id}` : '菜品');
+                    const price = item.price ?? item.Price ?? item.dish_price ?? item.dishPrice ?? 0;
+                    const sId = item.shop_id ?? item.ShopID ?? item.shopId ?? item.ShopId ?? null;
+                    return { id, name, price, shop_id: sId };
+                };
+
+                // --- 购物车逻辑 ---
+                const addToCart = (dish) => {
+                    // 绑定当前商家
+                    if (cart.value.length === 0) {
+                        // 确保当前选中的就是菜品所属的商家（UI逻辑已保证，但做个双保险）
+                    }
+
+                    const existing = cart.value.find(i => i.id === dish.id);
+                    if (existing) {
+                        existing.quantity++;
+                    } else {
+                        cart.value.push({ ...dish, quantity: 1 });
+                    }
+                    ElMessage.success({ message: `已添加: ${dish.name}`, duration: 1000 });
+                };
+
+                const increaseQuantity = (item) => item.quantity++;
+                
+                const decreaseQuantity = (item) => {
+                    item.quantity--;
+                    if (item.quantity <= 0) {
+                        cart.value = cart.value.filter(i => i.id !== item.id);
+                    }
+                };
+
+                const clearCart = () => {
+                    ElMessageBox.confirm('确定要清空购物车吗?', '提示', { type: 'warning' })
+                        .then(() => {
+                            cart.value = [];
+                            ElMessage.info('购物车已清空');
+                        })
+                        .catch(() => {});
+                };
+
+                const cartTotal = computed(() => {
+                    return cart.value.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2);
+                });
+
+                // --- 提交订单 ---
+                const submitOrder = () => {
+                    if (cart.value.length === 0) return;
+                    
+                    submitting.value = true;
+                    const payload = {
+                        user_id: currentUser.value && (currentUser.value.id ?? currentUser.value.user_id ?? currentUser.value.UserID),
+                        dishes: cart.value.map(i => ({ id: i.id, quantity: i.quantity }))
+                    };
+                    
+                    fetch('/api/orders', { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify(payload) 
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        ElMessageBox.alert(`订单已提交！订单号: ${data.order_id}`, '支付成功', {
+                            confirmButtonText: '确定',
+                            type: 'success',
+                            callback: () => {
+                                cart.value = []; // 清空购物车
+                                // 这里不重置 currentShopId，方便用户继续在该店点餐，
+                                // 或者你可以选择 currentShopId.value = null 回到列表
+                            }
+                        });
+                    })
+                    .catch(() => {
+                        ElMessage.error('提交订单失败，请重试');
+                    })
+                    .finally(() => submitting.value = false);
+                };
+
+                return {
+                    currentUser, loginForm, loading, loginError, handleLogin, logout,
+                    shops, loadingShops, currentShopId, currentShopName, handleSelectShop, isShopDisabled,
+                    menuItems, loadingMenu, addToCart,
+                    cart, cartTotal, increaseQuantity, decreaseQuantity, clearCart, submitOrder, submitting
+                };
             }
-            const currentShop = shops.find(shop => shop.shop_id === shopId);
-            if (!currentShop) {
-                alert('未找到该商家');
-                return;
-            }
-            if (currentShop.status === 0) {
-                document.getElementById('dishes-title').textContent = `商家菜品 - ${shopName}`;
-                const dishesContainer = document.getElementById('dishes-container');
-                dishesContainer.innerHTML = '<p style="color:#999; text-align:center; font-size:16px; padding:50px 0;">该商家休息中，不可点餐</p>';
-                return;
-            }
-            localStorage.setItem('selectedShopId', shopId);
-            localStorage.setItem('selectedShopName', shopName);
-            document.getElementById('dishes-title').textContent = `商家菜品 - ${shopName}`;
-            loadDishesForShop(shopId);
-        }
+        });
 
-        function loadDishesForShop(shopId) {
-            const dishesContainer = document.getElementById('dishes-container');
-            dishesContainer.innerHTML = '<p style="color:#666; text-align:center;">加载菜品中...</p>';
-
-            fetch('/menudish/getallmenudishes', { // 路径和后端一致
-                method: 'POST', // 明确指定 POST
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ shop_id: shopId }) // 参数放在 body 里
-            })
-            .then(response => {
-                if (!response.ok) throw new Error(`请求失败（${response.status}）`);
-                return response.json();
-            })
-            .then(res => {
-                const dishList = res.data || [];
-                menuItems = Array.isArray(dishList) ? dishList.map(normalizeDish) : [];
-               renderDishes();
-            })
-            .catch(err => {
-                dishesContainer.innerHTML = `<p style="color:red; text-align:center;">菜品加载失败：${err.message}</p>`;
-                console.error('菜品加载错误：', err);
-            });
-        }
-
-        function normalizeDish(item) {
-            const id = item.dish_id ?? item.dishId ?? item.id ?? item.MenuID ?? item.menu_id ?? item.DishID ?? item.DishId;
-            const name = item.dish_name ?? item.dishName ?? item.DishName ?? item.name ?? item.MenuName ?? (id ? `菜品#${id}` : '菜品');
-            const price = item.price ?? item.Price ?? item.dish_price ?? item.dishPrice ?? 0;
-            const shopId = item.shop_id ?? item.ShopID ?? item.shopId ?? item.ShopId ?? null;
-            return { id, name, price, shop_id: shopId };
-        }
-
-        function renderDishes() {
-            const c = document.getElementById('dishes-container');
-            c.innerHTML = '';
-            if (!menuItems.length) { c.innerHTML = '<p style="color:#666">请选择商家以查看菜品</p>'; return; }
-            menuItems.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'menu-item';
-                div.innerHTML = `<div><h3>${item.name}</h3><p>价格: ¥${Number(item.price).toFixed(2)}</p></div><button class="add-to-order" onclick="addToOrder(${item.id})">加入订单</button>`;
-                c.appendChild(div);
-            });
-        }
-
-        function addToOrder(itemId) {
-            const item = menuItems.find(i => i.id === itemId);
-            if (!item) return;
-            // 关键：第一次添加菜品时，绑定当前订单到该商家
-            if (orderDishes.length === 0) {
-                currentOrderShopId = item.shop_id;
-            }
-    
-            const existing = orderDishes.find(i => i.id === itemId);
-            if (existing) existing.quantity += 1; else orderDishes.push({ ...item, quantity: 1 });
-            renderOrder();
-            renderShops();
-        }
-
-        function renderOrder() {
-            const orderItemsDiv = document.getElementById('order-items');
-            orderItemsDiv.innerHTML = '';
-            let total = 0;
-
-            // 关键：显示当前订单所属商家名（有未提交订单时）
-            if (currentOrderShopId) {
-                const currentShop = shops.find(shop => shop.shop_id === currentOrderShopId);
-                const shopName = currentShop ? currentShop.shop_name : '未知商家';
-                const shopHeader = document.createElement('div');
-                shopHeader.style = 'border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; font-weight: bold; color: #2196F3;';
-                shopHeader.textContent = `当前商家：${shopName}`;
-                orderItemsDiv.appendChild(shopHeader);
-            }
-
-            orderDishes.forEach(item => {
-                total += item.price * item.quantity;
-                const div = document.createElement('div');
-                div.className = 'order-item';
-                div.innerHTML = `
-                    <span>${item.name} x ${item.quantity}</span>
-                    <span>¥${(item.price * item.quantity).toFixed(2)}</span>
-                    <span class="remove-item" onclick="removeFromOrder(${item.id})">移除</span>
-                `;
-                orderItemsDiv.appendChild(div);
-            });
-            document.getElementById('order-total').textContent = `总计: ¥${total.toFixed(2)}`;
-        }
-
-        function removeFromOrder(itemId) {
-            orderDishes = orderDishes.filter(i => i.id !== itemId);
-            // 关键：订单为空时，清空当前订单商家ID，恢复其他商家按钮
-            if (orderDishes.length === 0) {
-                currentOrderShopId = null;
-                renderShops(); // 刷新商家列表
-            }
-            renderOrder();
-        }
-
-        function submitOrder() {
-            if (orderDishes.length === 0) { alert('请先添加菜品再提交订单'); return; }
-            const payload = { dishes: orderDishes.map(i => ({ id: i.id, quantity: i.quantity })) };
-            fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            .then(res => res.json())
-            .then(data => { currentOrderId = data.order_id; document.getElementById('order-status').textContent = '订单已提交，等待制作'; })
-            .catch(() => { alert('提交订单失败'); });
-        }
-
-        function closeModal() { document.getElementById('order-modal').style.display = 'none'; }
+        app.use(ElementPlus);
+        app.mount('#app');
     </script>
 </body>
 </html>
