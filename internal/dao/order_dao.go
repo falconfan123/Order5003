@@ -21,14 +21,14 @@ func GetOrderByID(db *gorm.DB, id int) (*model.OrderEntity, error) {
 	return &e, nil
 }
 
+func UpdateOrderStatus(db *gorm.DB, id int, status string) error {
+	return db.Model(&model.OrderEntity{}).Where("order_id = ?", id).Update("status", status).Error
+}
+
 func ListOrders(db *gorm.DB) ([]model.OrderEntity, error) {
 	var list []model.OrderEntity
 	if err := db.Find(&list).Error; err != nil {
 		return nil, err
 	}
 	return list, nil
-}
-
-func UpdateOrderStatus(db *gorm.DB, id int, status string) error {
-	return db.Model(&model.OrderEntity{}).Where("order_id = ?", id).Update("status", status).Error
 }
