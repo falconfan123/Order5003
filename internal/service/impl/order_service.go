@@ -18,6 +18,7 @@ func (s *GormStore) CreateOrder(order bizmodel.Order) bizmodel.Order {
 		return order
 	}
 	order.OrderID = e.OrderID
+	//CREATE ORDER ZHUHSHI
 	return order
 }
 
