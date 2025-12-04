@@ -12,7 +12,7 @@ type OrderEntity struct {
 	ShopID       int             `gorm:"column:shop_id;not null"`
 	DelivererID  *int            `gorm:"column:deliverer_id"`
 	TotalAmount  decimal.Decimal `gorm:"column:total_amount;not null"`
-	Status       string          `gorm:"column:status;type:varchar(20);not null;default:'未下单'"`
+	Status       int             `gorm:"column:status;type:int;not null;default:'未下单'"`
 	CreatedAt    time.Time       `gorm:"column:created_at"`
 	PayTime      *time.Time      `gorm:"column:pay_time"`
 	RejectReason *string         `gorm:"column:reject_reason;type:varchar(200)"`

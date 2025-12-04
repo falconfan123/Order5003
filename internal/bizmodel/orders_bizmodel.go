@@ -26,7 +26,7 @@ type Order struct {
 	UserID      int             `json:"user_id"`      // 下单用户ID
 	ShopID      int             `json:"shop_id"`      // 所属商家ID
 	TotalAmount decimal.Decimal `json:"total_amount"` // 订单总金额
-	Status      string          `json:"status"`       // 订单状态
+	Status      int             `json:"status"`       // 订单状态
 	CreatedAt   time.Time       `json:"created_at"`   // 创建时间
 }
 

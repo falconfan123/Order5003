@@ -96,7 +96,7 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 			UserID:      req.UserID,
 			ShopID:      targetShopID,
 			TotalAmount: totalAmount,
-			Status:      "待支付",
+			Status:      1,
 			CreatedAt:   time.Now(),
 		}
 		orderID, err := h.svc.CreateOrderMaster(c.Request.Context(), tx, orderMaster)
