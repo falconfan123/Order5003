@@ -3,6 +3,7 @@ package handlers
 import (
 	"Order5003/internal/service"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -71,16 +72,17 @@ func (h *ShopHandler) GetShopNameByShopID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"shop_name": shop})
 }
 func (h *ShopHandler) GetOrdersByShopID(c *gin.Context) {
-	if c.Request.Method != http.MethodPost {
+	if c.Request.Method != http.MethodGet {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
 		return
 	}
-	var request struct{ ShopID int }
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+	shopIdstr := c.Query("shop_id")
+	ShopID, err := strconv.Atoi(shopIdstr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid shop_id"})
 		return
 	}
-	orders, err := h.svc.GetOrdersByShopID(request.ShopID)
+	orders, err := h.svc.GetOrdersByShopID(ShopID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
