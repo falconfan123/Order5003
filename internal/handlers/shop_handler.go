@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"Order5003/internal/logger"
 	"Order5003/internal/service"
 	"net/http"
 	"strconv"
@@ -72,11 +73,17 @@ func (h *ShopHandler) GetShopNameByShopID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"shop_name": shop})
 }
 func (h *ShopHandler) GetOrdersByShopID(c *gin.Context) {
+	logger.Info("【后端】GetOrdersByShopID - 完整请求URL:", c.Request.URL.String())
+
 	if c.Request.Method != http.MethodGet {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
 		return
 	}
 	shopIdstr := c.Query("shop_id")
+	if shopIdstr == "" {
+		shopIdstr = c.Query("shopid")
+	}
+	logger.Info("shopIdstr", shopIdstr)
 	ShopID, err := strconv.Atoi(shopIdstr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid shop_id"})
