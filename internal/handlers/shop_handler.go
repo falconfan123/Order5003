@@ -52,3 +52,21 @@ func (h *ShopHandler) GetAll(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, shops)
 }
+
+func (h *ShopHandler) GetShopNameByShopID(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var request struct{ ShopID int }
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	shop, err := h.svc.GetShopNameByShopID(request.ShopID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"shop_name": shop})
+}

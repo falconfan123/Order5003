@@ -47,3 +47,11 @@ func (s *GormStore) GetAllShops() ([]bizmodel.Shop, error) {
 	}
 	return out, nil
 }
+
+func (s *GormStore) GetShopNameByShopID(shopID int) (string, error) {
+	e, err := dao.GetShopByID(s.db, shopID)
+	if err != nil {
+		return "", errors.New("shop not found")
+	}
+	return e.ShopName, nil
+}

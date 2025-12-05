@@ -451,6 +451,7 @@
                 const showOrderHistory = ref(false);
                 const orders = ref([]);
                 const loadingOrders = ref(false);
+                const shopNameCache = new Map();
 
                 // 筛选与定位
                 const searchKeyword = ref('');
@@ -682,6 +683,24 @@
                                 shop_name: `商家ID:${o.shop_id}`
                             }));
                             console.log('格式化后订单列表：', orders.value);
+
+                            const ids = [...new Set(list.map(o => o.shop_id).filter(id => id !== undefined && id !== null))];
+                            Promise.all(ids.map(id => {
+                                if (shopNameCache.has(id)) {
+                                    return Promise.resolve({ id, name: shopNameCache.get(id) });
+                                }
+                                return fetch('/shop/getshopnamebyshopid', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ ShopID: id })
+                                })
+                                .then(res => res.json())
+                                .then(d => { const name = d.shop_name || `商家ID:${id}`; shopNameCache.set(id, name); return { id, name }; })
+                                .catch(() => ({ id, name: `商家ID:${id}` }));
+                            })).then(results => {
+                                const nameMap = new Map(results.map(r => [r.id, r.name]));
+                                orders.value = orders.value.map(o => ({ ...o, shop_name: nameMap.get(o.shop_id) || `商家ID:${o.shop_id}` }));
+                            });
                         })
                         .catch(err => {
                             console.error('获取订单列表失败：', err);
