@@ -332,7 +332,8 @@
             <!-- 2. 店铺列表页 (Home) -->
             <div v-else-if="!currentShopId">
                 <div class="category-nav">
-                    <div class="cat-item" v-for="cat in categories" :class="{active: currentCategory===cat.name}" @click="handleCategoryClick(cat.name, cat.keyword)">
+                    <!-- 修复1：传参改为 cat.type_id 而非 cat.keyword -->
+                    <div class="cat-item" v-for="cat in categories" :class="{active: currentCategory===cat.name}" @click="handleCategoryClick(cat.name, cat.type_id)">
                         <div class="cat-icon" :style="{background:cat.color}"><el-icon><component :is="cat.icon" /></el-icon></div>
                         <div class="cat-text">{{cat.name}}</div>
                     </div>
@@ -416,18 +417,25 @@
         const { User, Lock, Food, Shop, Plus, ShoppingCart, Search, StarFilled, SwitchButton, Location, ArrowDown, Back, ArrowRight, Tickets, Ticket, Present, ShoppingBag, Burger, Bowl, IceCream, CaretBottom } = ElementPlusIconsVue;
 
         // --- 配置 ---
-        const USE_MOCK_DATA = false; // 改为 true 可预览效果，false 连接后端
+        // 关键修改1：关闭模拟数据，改为对接真实接口
+        const USE_MOCK_DATA = false; 
 
         // --- Mock Data ---
+        // 关键修改2：保留Mock数据（备用），但实际不会触发
         const MOCK_SHOPS = [
-            { shop_id: 1, shop_name: '菇的辣克 Good Luck', status: 1, delivery_fee: 0, delivery_range: 5.6 },
-            { shop_id: 2, shop_name: '韩餐 Hodori', status: 1, delivery_fee: 5, delivery_range: 2.3 }
+            { shop_id: 1, shop_name: '菇的辣克 Good Luck', status: 1, delivery_fee: 0, delivery_range: 5.6, type: 3 }, 
+            { shop_id: 2, shop_name: '韩餐 Hodori', status: 1, delivery_fee: 5, delivery_range: 2.3, type: 3 }, 
+            { shop_id: 3, shop_name: '蜜雪冰城', status: 1, delivery_fee: 2, delivery_range: 3.0, type: 1 }, 
+            { shop_id: 4, shop_name: '麦当劳', status: 1, delivery_fee: 0, delivery_range: 4.0, type: 2 }, 
+            { shop_id: 5, shop_name: '便利店', status: 1, delivery_fee: 3, delivery_range: 2.0, type: 4 } 
         ];
         const MOCK_MENU = { 
             1: [{ id: 101, name: '招牌辣子鸡', price: 28 }], 
-            2: [{ id: 201, name: '石锅拌饭', price: 18 }] 
+            2: [{ id: 201, name: '石锅拌饭', price: 18 }],
+            3: [{ id: 301, name: '珍珠奶茶', price: 12 }],
+            4: [{ id: 401, name: '巨无霸', price: 24 }],
+            5: [{ id: 501, name: '矿泉水', price: 2 }]
         };
-        // 增加不同的状态用于演示取消功能
         const MOCK_ORDERS = [
             { order_id: 'ORD-123', shop_name: '菇的辣克 Good Luck', status: '已完成', total_price: 56, create_time: '2023-10-01 12:00', dishes: [{name: '招牌辣子鸡', image: null}] },
             { order_id: 'ORD-124', shop_name: '韩餐 Hodori', status: '配送中', total_price: 36, create_time: '2023-10-02 18:30', dishes: [{name: '石锅拌饭', image: null}] },
@@ -440,7 +448,7 @@
                 const currentUser = ref(null);
                 const loginForm = reactive({ username: '', password: '' });
                 const loading = ref(false);
-                const shops = ref([]);
+                const shops = ref([]); // 存储后端返回的店铺数据
                 const loadingShops = ref(false);
                 const menuItems = ref([]);
                 const loadingMenu = ref(false);
@@ -457,18 +465,18 @@
                 // 筛选与定位
                 const searchKeyword = ref('');
                 const currentCategory = ref('全部');
-                const currentCategoryKeyword = ref('');
+                const currentType = ref(0); 
                 const currentSort = ref('default');
                 const locationDialogVisible = ref(false);
                 const currentAddress = ref('233 N Spring St, Los Angeles');
                 const mockAddresses = ref(['233 N Spring St, Los Angeles', 'USC Village', 'Santa Monica Blvd']);
 
                 const categories = [
-                    { name: '全部', icon: 'Food', color: '#ff6b6b', keyword: '' },
-                    { name: '甜品奶茶', icon: 'IceCream', color: '#ff9f43', keyword: '奶茶' },
-                    { name: '炸鸡汉堡', icon: 'Burger', color: '#feca57', keyword: '汉堡' },
-                    { name: '美味中餐', icon: 'Bowl', color: '#ee5253', keyword: '餐' },
-                    { name: '生活百货', icon: 'ShoppingBag', color: '#5f27cd', keyword: '百货' },
+                    { name: '全部', type_id: 0, icon: 'Food', color: '#ff6b6b' },
+                    { name: '甜品奶茶', type_id: 1, icon: 'IceCream', color: '#ff9f43' },
+                    { name: '炸鸡汉堡', type_id: 2, icon: 'Burger', color: '#feca57' },
+                    { name: '美味中餐', type_id: 3, icon: 'Bowl', color: '#ee5253' },
+                    { name: '生活百货', type_id: 4, icon: 'ShoppingBag', color: '#5f27cd' },
                 ];
 
                 // 登录
@@ -477,6 +485,7 @@
                     if (USE_MOCK_DATA) {
                         setTimeout(() => { currentUser.value = { id: 888, username: 'Admin' }; loading.value = false; fetchShops(); }, 500);
                     } else {
+                        // 对接真实登录接口（需后端实现）
                         fetch('/user/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(loginForm) })
                         .then(res => { if(!res.ok) throw new Error(); return res.json(); })
                         .then(data => { currentUser.value = data; fetchShops(); })
@@ -507,27 +516,43 @@
                 // 商家 & 菜单
                 const fetchShops = () => {
                     loadingShops.value = true;
-                    if (USE_MOCK_DATA) { setTimeout(() => { shops.value = MOCK_SHOPS; loadingShops.value = false; }, 300); }
-                    else {
-                        fetch('/shop/getall', { method: 'POST', headers: {'Content-Type':'application/json'} })
-                        .then(res => res.json()).then(data => shops.value = Array.isArray(data)?data:[])
-                        .catch(()=>ElMessage.error('获取商家失败')).finally(()=>loadingShops.value=false);
+                    if (USE_MOCK_DATA) { 
+                        setTimeout(() => { shops.value = MOCK_SHOPS; loadingShops.value = false; }, 300); 
+                    } else {
+                        // 关键修改3：调用后端/shop/getall接口，获取真实店铺数据
+                        fetch('/shop/getall', { 
+                            method: 'POST', 
+                            headers: {'Content-Type':'application/json'},
+                            // 如需传参（如token/地址），可在这里添加body
+                            // body: JSON.stringify({ token: currentUser.value.token })
+                        })
+                        .then(res => {
+                            if (!res.ok) throw new Error('接口请求失败');
+                            return res.json();
+                        })
+                        .then(data => {
+                            // 确保后端返回的是数组，且字段和前端匹配（shop_id, shop_name, status, delivery_fee, delivery_range, type）
+                            shops.value = Array.isArray(data) ? data : [];
+                        })
+                        .catch(()=>ElMessage.error('获取商家失败'))
+                        .finally(()=>loadingShops.value=false);
                     }
                 };
+
                 const fetchMenu = (shopId) => {
                     loadingMenu.value = true;
                     if (USE_MOCK_DATA) {
                         setTimeout(() => { menuItems.value = (MOCK_MENU[shopId]||[]).map(normalizeDish); loadingMenu.value = false; }, 300);
                     } else {
+                        // 对接真实菜单接口（需后端实现）
                         fetch('/menudish/getallmenudishes', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({shop_id: shopId}) })
                         .then(res => res.json()).then(res => menuItems.value = (res.data||[]).map(normalizeDish))
                         .catch(()=>ElMessage.error('获取菜单失败')).finally(()=>loadingMenu.value=false);
                     }
                 };
-                // 修复：增强版的字段兼容函数，确保菜品名称能显示
+
                 const normalizeDish = (item) => {
                     const id = item.dish_id ?? item.dishId ?? item.id ?? item.MenuID;
-                    // 关键修复：增加对 DishName, dishName, dish_name, name 的全面检查
                     const name = item.dish_name ?? item.dishName ?? item.DishName ?? item.name ?? item.MenuName ?? (id ? `菜品#${id}` : '未知菜品');
                     const price = item.price ?? item.Price ?? 0;
                     return { id, name, price, description: item.description||'', image: item.image||null, shop_id: item.shop_id };
@@ -556,7 +581,7 @@
                     ElMessage.success(`已添加 ${dish.name}`);
                 };
                 const increaseQuantity = (i) => i.quantity++;
-                const decreaseQuantity = (i) => { i.quantity--; if(i.quantity<=0) cart.value=cart.value.filter(x=>x.id!==i.id); };
+                const decreaseQuantity = (i) => { i.quantity--; if(i.quantity<=0) cart.value=cart.value.filter(x=>x.id===i.id); };
                 const clearCart = () => {
                      ElMessageBox.confirm('确定清空购物车？', '提示', {confirmButtonText:'确定',cancelButtonText:'取消',type:'warning'})
                      .then(()=>{cart.value=[]}).catch(()=>{});
@@ -585,7 +610,7 @@
                 // --- 订单历史逻辑 ---
                 const openOrderList = () => {
                     showOrderHistory.value = true;
-                    currentShopId.value = null; // 隐藏菜单页
+                    currentShopId.value = null; 
                     fetchOrderList();
                 };
                 const closeOrderList = () => {
@@ -596,7 +621,6 @@
                     if(USE_MOCK_DATA) {
                         setTimeout(() => { orders.value = MOCK_ORDERS; loadingOrders.value = false; }, 500);
                     } else {
-                        // 假设的获取订单接口
                         fetch('/order/getall', { 
                             method: 'POST', 
                             headers: {'Content-Type':'application/json'},
@@ -609,7 +633,7 @@
                     }
                 };
                 
-                // 新增：取消订单逻辑
+                // 取消订单逻辑
                 const cancelOrder = (order) => {
                     ElMessageBox.confirm('确定要取消此订单吗？', '取消订单', {
                         confirmButtonText: '确定取消',
@@ -620,8 +644,6 @@
                             order.status = '已取消';
                             ElMessage.success('订单已取消');
                         } else {
-                            // 假设的取消接口，你需要根据你的后端实现来修改 URL
-                            // 这里假设需要传 order_id
                             const orderId = order.order_id || order.id; 
                             fetch('/api/orders/cancel', {
                                 method: 'POST',
@@ -630,7 +652,7 @@
                             })
                             .then(res => {
                                 if (res.ok) {
-                                    order.status = '已取消'; // 乐观更新UI
+                                    order.status = '已取消'; 
                                     ElMessage.success('订单已取消');
                                 } else {
                                     ElMessage.error('取消失败，请联系商家');
@@ -642,12 +664,18 @@
                 };
 
                 // 筛选逻辑
-                const handleCategoryClick = (n, k) => { currentCategory.value=n; currentCategoryKeyword.value=k||''; };
+                const handleCategoryClick = (n, typeId) => { 
+                    currentCategory.value = n; 
+                    currentType.value = typeId; 
+                };
                 const handleSort = (t) => currentSort.value=t;
                 const computedShops = computed(() => {
                     let res = [...shops.value];
+                    // 关键词筛选
                     if(searchKeyword.value) res = res.filter(s=>s.shop_name.includes(searchKeyword.value));
-                    if(currentCategoryKeyword.value) res = res.filter(s=>s.shop_name.includes(currentCategoryKeyword.value));
+                    // 分类筛选
+                    if(currentType.value !== 0) res = res.filter(s=>s.type === currentType.value);
+                    // 排序
                     if(currentSort.value==='distance') res.sort((a,b)=>(a.delivery_range||0)-(b.delivery_range||0));
                     if(currentSort.value==='price') res.sort((a,b)=>(a.delivery_fee||0)-(b.delivery_fee||0));
                     return res;
@@ -665,10 +693,8 @@
                     menuItems, loadingMenu, addToCart, cart, cartTotal, increaseQuantity, decreaseQuantity, clearCart, submitOrder, submitting,
                     categories, searchKeyword, currentCategory, handleCategoryClick, currentSort, handleSort,
                     locationDialogVisible, currentAddress, mockAddresses, selectAddress, addNewAddress,
-                    // 订单相关
                     showOrderHistory, orders, loadingOrders, openOrderList, closeOrderList, cancelOrder,
-                    User, Lock, // Icons
-                    currentCategoryKeyword
+                    User, Lock,
                 };
             }
         });

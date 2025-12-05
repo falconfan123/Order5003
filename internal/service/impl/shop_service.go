@@ -42,6 +42,7 @@ func (s *GormStore) GetAllShops() ([]bizmodel.Shop, error) {
 			CreatedAt:     &e.CreatedAt,
 			Password:      e.Password,
 			Status:        int(e.Status),
+			Type:          int(e.Type),
 		})
 	}
 	return out, nil
