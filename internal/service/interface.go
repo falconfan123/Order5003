@@ -24,6 +24,7 @@ type OrderService interface {
 }
 
 type ShopService interface {
+	GetOrdersByShopID(shopID int) ([]bizmodel.Order, error)
 	GetShopByName(name string) (bizmodel.Shop, error)
 	GetAllShops() ([]bizmodel.Shop, error)
 	GetMenuDishesByShopID(shopID int) ([]bizmodel.Dishes, error)

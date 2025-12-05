@@ -29,3 +29,12 @@ func GetShopByID(db *gorm.DB, id int) (*model.ShopEntity, error) {
 	}
 	return &e, nil
 }
+
+// ListOrdersByShopID 获取指定店铺的所有订单
+func ListOrdersByShopID(db *gorm.DB, shopID int) ([]model.OrderEntity, error) {
+	var list []model.OrderEntity
+	if err := db.Where("shop_id = ?", shopID).Find(&list).Error; err != nil {
+		return []model.OrderEntity{}, err
+	}
+	return list, nil
+}

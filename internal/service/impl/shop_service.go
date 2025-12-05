@@ -55,3 +55,24 @@ func (s *GormStore) GetShopNameByShopID(shopID int) (string, error) {
 	}
 	return e.ShopName, nil
 }
+
+// GetOrdersByShopID 获取指定店铺的所有订单
+func (s *GormStore) GetOrdersByShopID(shopID int) ([]bizmodel.Order, error) {
+	list, err := dao.ListOrdersByShopID(s.db, shopID)
+	logger.Info("list orders by shop id", zap.Any("list", list))
+	if err != nil {
+		return []bizmodel.Order{}, errors.New("orders not found")
+	}
+	out := make([]bizmodel.Order, 0, len(list))
+	for _, e := range list { //list: []model.OrderEntity
+		out = append(out, bizmodel.Order{
+			OrderID:     e.OrderID,
+			ShopID:      e.ShopID,
+			UserID:      e.UserID,
+			TotalAmount: e.TotalAmount,
+			Status:      int(e.Status),
+			CreatedAt:   e.CreatedAt,
+		})
+	}
+	return out, nil
+}
