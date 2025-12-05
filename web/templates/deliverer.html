@@ -32,7 +32,7 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* --- 美化后的登录页 --- */
+        /* --- 登录页样式 --- */
         .login-container {
             height: 100vh;
             display: flex;
@@ -42,9 +42,9 @@
             background: linear-gradient(135deg, #e0f7fa 0%, #f4f6f9 100%);
             position: relative;
             overflow: hidden;
+            z-index: 100;
         }
 
-        /* 背景装饰圆圈 */
         .circle-bg {
             position: absolute;
             border-radius: 50%;
@@ -62,7 +62,6 @@
             padding: 40px 30px;
             box-shadow: 0 20px 40px rgba(0, 203, 211, 0.15);
             z-index: 1;
-            transition: transform 0.3s;
         }
 
         .brand-area {
@@ -96,7 +95,6 @@
             margin-top: 5px;
         }
 
-        /* 输入框美化 */
         .custom-input .el-input__wrapper {
             border-radius: 12px;
             padding: 5px 15px;
@@ -145,11 +143,20 @@
             align-items: center;
             justify-content: space-between;
         }
+        
+        /* 头部下拉菜单样式调整 */
+        .header-dropdown-link {
+            display: flex;
+            align-items: center;
+            color: white;
+            cursor: pointer;
+            outline: none;
+        }
 
         .content-area {
             padding: 20px;
-            margin-top: -20px; /* 卡片向上浮动 */
-            padding-bottom: 80px;
+            margin-top: -20px;
+            padding-bottom: 20px; /* 调整底部留白 */
         }
 
         .order-card {
@@ -220,42 +227,6 @@
             margin-top: 10px;
         }
 
-        /* 底部导航 */
-        .bottom-nav {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            display: flex;
-            justify-content: space-around;
-            padding: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            z-index: 100;
-        }
-        
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: #ccc;
-            font-size: 11px;
-            transition: all 0.3s;
-        }
-        
-        .nav-item.active {
-            color: var(--primary);
-            transform: translateY(-2px);
-        }
-        
-        .nav-icon {
-            font-size: 22px;
-            margin-bottom: 3px;
-        }
-
-        /* 覆盖 Element Tabs 样式 */
         .el-tabs__header { margin-bottom: 0 !important; }
         .el-tabs__nav-wrap::after { height: 0 !important; }
         .el-tabs__item { 
@@ -272,9 +243,8 @@
 </head>
 <body>
     <div id="app">
-        <!-- 1. 美化后的登录界面 -->
+        <!-- 1. 登录界面 (默认显示) -->
         <div class="login-container" v-if="!currentUser">
-            <!-- 背景装饰 -->
             <div class="circle-bg" style="width: 300px; height: 300px; top: -100px; left: -100px;"></div>
             <div class="circle-bg" style="width: 200px; height: 200px; bottom: -50px; right: -50px; background: #00b5bc;"></div>
 
@@ -314,22 +284,36 @@
             </div>
         </div>
 
-        <!-- 2. 主界面 -->
+        <!-- 2. 主界面 (登录后才显示) -->
         <div v-else>
-            <!-- 头部 -->
             <div class="app-header">
                 <div class="rider-info">
-                    <div style="display: flex; align-items: center;">
-                        <el-avatar :size="46" style="background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.3); font-weight: bold;">
-                            {{ currentUser.name ? currentUser.name.slice(-1) : '骑' }}
-                        </el-avatar>
-                        <div style="margin-left: 12px;">
-                            <div style="font-size: 18px; font-weight: bold;">{{ currentUser.name || '骑手' }}</div>
-                            <div style="font-size: 12px; opacity: 0.8; margin-top: 2px; background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 10px; display: inline-block;">
-                                <el-icon style="vertical-align: -1px"><Location /></el-icon> {{ currentUser.responsible_area || '中心区域' }}
+                    <!-- 左上角：下拉菜单区域 -->
+                    <el-dropdown trigger="click" @command="handleCommand">
+                        <div class="header-dropdown-link">
+                            <el-avatar :size="40" style="background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.3); font-weight: bold; cursor: pointer;">
+                                {{ getAvatarText() }}
+                            </el-avatar>
+                            <div style="margin-left: 10px; text-align: left;">
+                                <div style="font-size: 16px; font-weight: bold; display: flex; align-items: center;">
+                                    {{ getDisplayName() }}
+                                    <el-icon style="font-size: 12px; margin-left: 4px; opacity: 0.8;"><Caret-Bottom /></el-icon>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                        <template #dropdown>
+                            <el-dropdown-menu>
+                                <el-dropdown-item disabled>
+                                    <el-icon><User /></el-icon> 账号管理
+                                </el-dropdown-item>
+                                <el-dropdown-item divided command="logout" style="color: #ff4d4f;">
+                                    <el-icon><Switch-Button /></el-icon> 退出登录
+                                </el-dropdown-item>
+                            </el-dropdown-menu>
+                        </template>
+                    </el-dropdown>
+                    
+                    <!-- 右上角：刷新按钮 -->
                     <el-button circle style="background: rgba(255,255,255,0.2); border: none; color: white;" @click="refreshData">
                         <el-icon :class="{'is-loading': loadingOrders}"><Refresh /></el-icon>
                     </el-button>
@@ -337,7 +321,6 @@
             </div>
 
             <div class="content-area">
-                <!-- 订单Tabs -->
                 <el-tabs v-model="activeTab" stretch style="margin-bottom: 15px;">
                     <el-tab-pane label="抢单大厅" name="hall"></el-tab-pane>
                     <el-tab-pane label="我的任务" name="my">
@@ -349,21 +332,18 @@
 
                 <!-- 1. 抢单大厅列表 -->
                 <div v-if="activeTab === 'hall'">
-                    <el-empty v-if="hallList.length === 0" description="暂无新订单，休息一下吧" :image-size="100"></el-empty>
+                    <el-empty v-if="hallList.length === 0" description="暂无新订单" :image-size="100"></el-empty>
                     
                     <div v-for="order in hallList" :key="order.orderId" class="order-card">
                         <div class="order-tag">待抢单</div>
                         
                         <div class="card-row">
-                            <!-- 兼容处理: 尝试读取 restaurantName, shopName 或 restaurant -->
                             <div class="restaurant-name">{{ order.restaurantName || order.shopName || order.restaurant || '未知商家' }}</div>
-                            <!-- 兼容处理: 尝试读取 deliveryFee, fee -->
                             <div class="price-text">¥{{ order.deliveryFee || order.fee || 5 }}</div>
                         </div>
                         
                         <div class="info-row">
                             <el-icon class="info-icon"><Map-Location /></el-icon>
-                            <!-- 兼容处理: address, userAddress -->
                             <div style="font-weight: 500; color: #333;">{{ order.address || order.userAddress || '无地址信息' }}</div>
                         </div>
                         
@@ -409,22 +389,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- 底部导航 -->
-            <div class="bottom-nav">
-                <div class="nav-item active">
-                    <el-icon class="nav-icon"><Bicycle /></el-icon>
-                    <span>接单</span>
-                </div>
-                <div class="nav-item">
-                    <el-icon class="nav-icon"><DataLine /></el-icon>
-                    <span>统计</span>
-                </div>
-                <div class="nav-item" @click="logout">
-                    <el-icon class="nav-icon"><Switch-Button /></el-icon>
-                    <span>退出</span>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -432,7 +396,6 @@
         const { createApp, ref, computed, onMounted } = Vue;
         const { ElMessage, ElMessageBox } = ElementPlus;
 
-        // API 基础地址 (保持空字符串以使用相对路径)
         const API_BASE_URL = ''; 
 
         createApp({
@@ -445,16 +408,22 @@
                 const allOrders = ref([]);
                 const lastError = ref('');
 
-                // 尝试从 localStorage 恢复登录状态
                 onMounted(() => {
-                    const savedUser = localStorage.getItem('rider_user');
-                    if (savedUser) {
-                        try {
-                            currentUser.value = JSON.parse(savedUser);
-                            fetchOrders();
-                        } catch(e) { localStorage.removeItem('rider_user'); }
-                    }
+                    // 默认不保留登录状态
                 });
+
+                // 获取显示名字的辅助函数
+                const getDisplayName = () => {
+                    if (!currentUser.value) return '骑手';
+                    // 尝试从多个字段获取名字
+                    return currentUser.value.name || currentUser.value.username || currentUser.value.deliverer_name || currentUser.value.phone || '骑手';
+                };
+
+                // 获取头像文字的辅助函数
+                const getAvatarText = () => {
+                    const name = getDisplayName();
+                    return name ? name.slice(-1) : '骑';
+                };
 
                 // 1. 登录
                 const handleLogin = () => {
@@ -462,7 +431,6 @@
                     loading.value = true;
                     lastError.value = '';
 
-                    // 构造兼容性 Payload，确保后端能查到
                     const payload = {
                         phone: loginForm.value.phone,
                         password: loginForm.value.password,
@@ -483,6 +451,9 @@
                         const user = data.data || data;
                         if(user && (user.deliverer_id || user.id || user.phone)) {
                             currentUser.value = user;
+                            // 确保 name 字段存在
+                            if (!currentUser.value.name && currentUser.value.username) currentUser.value.name = currentUser.value.username;
+                            
                             localStorage.setItem('rider_user', JSON.stringify(user));
                             ElMessage.success('登录成功，准备接单！');
                             fetchOrders();
@@ -497,29 +468,53 @@
                     .finally(() => loading.value = false);
                 };
 
-                // 2. 获取订单 (轮询逻辑)
+                // 2. 获取订单 (带模拟数据兜底)
                 const fetchOrders = () => {
                     loadingOrders.value = true;
                     fetch(`${API_BASE_URL}/deliver/orders`)
                     .then(res => res.json())
                     .then(data => {
                         const list = data.data || data;
-                        if(Array.isArray(list)) {
-                            // 简单的本地去重，防止闪烁
+                        if(Array.isArray(list) && list.length > 0) {
                             allOrders.value = list;
+                        } else {
+                            loadFallbackMockData(); 
                         }
                     })
-                    .catch(e => console.error("同步订单失败", e))
+                    .catch(e => {
+                        console.error("同步订单失败，使用模拟数据", e);
+                        loadFallbackMockData();
+                    })
                     .finally(() => loadingOrders.value = false);
                 };
 
-                // 自动刷新 (每10秒)
+                // 自动兜底的模拟数据逻辑
+                const loadFallbackMockData = () => {
+                    if(allOrders.value.length > 0) return;
+                    
+                    const mocks = [
+                        { orderId: 'M-1001', restaurantName: '茶颜悦色 (模拟数据)', address: '科技园A座 1001', items: '幽兰拿铁 x2', deliveryFee: 6, status: 4, createdAt: new Date().toISOString(), isMock: true },
+                        { orderId: 'M-1002', restaurantName: '肯德基 (模拟数据)', address: '幸福家园 5栋 202', items: '香辣鸡腿堡套餐 x1', deliveryFee: 5, status: 4, createdAt: new Date().toISOString(), isMock: true },
+                        { orderId: 'M-1003', restaurantName: '真功夫 (模拟数据)', address: '大学城北区', items: '香菇滑鸡饭 x1', deliveryFee: 4, status: 4, createdAt: new Date().toISOString(), isMock: true }
+                    ];
+                    allOrders.value = mocks;
+                };
+
+                // 自动刷新
                 setInterval(() => {
                     if(currentUser.value) fetchOrders();
                 }, 10000);
 
                 // 3. 抢单
                 const acceptOrder = (order) => {
+                    if(order.isMock) {
+                        order.status = 'accepted';
+                        order.courierId = currentUser.value.deliverer_id || currentUser.value.id;
+                        ElMessage.success('模拟抢单成功');
+                        activeTab.value = 'my';
+                        return;
+                    }
+
                     const orderId = order.orderId || order.id;
                     const riderId = currentUser.value.deliverer_id || currentUser.value.id;
                     
@@ -541,9 +536,21 @@
 
                 // 4. 完成
                 const completeOrder = (order) => {
+                    if(order.isMock) {
+                        ElMessageBox.confirm('确认已将餐品送达用户手中？', '送达确认', {
+                            confirmButtonText: '确定',
+                            cancelButtonText: '取消',
+                            type: 'success'
+                        }).then(() => {
+                            order.status = 'completed';
+                            ElMessage.success('模拟完成');
+                        }).catch(() => {});
+                        return;
+                    }
+
                     const orderId = order.orderId || order.id;
                     ElMessageBox.confirm('确认已将餐品送达用户手中？', '送达确认', {
-                        confirmButtonText: '确认送达',
+                        confirmButtonText: '确定',
                         cancelButtonText: '取消',
                         type: 'success'
                     }).then(() => {
@@ -556,36 +563,40 @@
                             ElMessage.success('订单完成，辛苦了！');
                             fetchOrders();
                         });
-                    });
+                    }).catch(() => {});
                 };
 
-                // 辅助函数
                 const logout = () => {
                     localStorage.removeItem('rider_user');
                     currentUser.value = null;
                     loginForm.value = {phone:'', password:''};
+                    allOrders.value = []; 
+                };
+
+                const handleCommand = (command) => {
+                    if (command === 'logout') {
+                        logout();
+                    }
                 };
 
                 const refreshData = () => {
+                    allOrders.value = []; 
                     fetchOrders();
                     ElMessage.info('数据已刷新');
                 };
 
                 const getStatusText = (status) => {
                     const map = {
-                        'pending': '待接单',
-                        'accepted': '配送中',
-                        'delivering': '配送中',
+                        'pending': '待接单', 0: '待接单',
+                        4: '待抢单', '4': '待抢单',
+                        'accepted': '配送中', 'delivering': '配送中',
                         'completed': '已完成'
                     };
                     return map[status] || status;
                 };
 
-                // 智能格式化商品显示
                 const formatItems = (order) => {
-                    // 如果后端返回的是字符串直接显示
                     if (typeof order.items === 'string') return order.items;
-                    // 如果是数组，尝试拼接
                     if (Array.isArray(order.items)) {
                         return order.items.map(i => `${i.name || i.productName} x${i.quantity || 1}`).join(', ');
                     }
@@ -593,34 +604,31 @@
                 };
                 
                 const formatTime = (timeStr) => {
-                    if(!timeStr) return '';
+                    if(!timeStr) return '刚刚';
                     const d = new Date(timeStr);
-                    // 简单的格式化: 12:30
                     return d.getHours().toString().padStart(2,0) + ':' + d.getMinutes().toString().padStart(2,0);
                 };
 
-                // 筛选逻辑
                 const hallList = computed(() => {
-                    // 只要状态是 pending 或者 0 (有些后端用数字)
-                    return allOrders.value.filter(o => o.status === 'pending' || o.status === 0);
+                    return allOrders.value.filter(o => o.status == 4 || o.status === '4' || o.status === 'pending');
                 });
 
                 const myList = computed(() => {
                     if(!currentUser.value) return [];
                     const myId = currentUser.value.deliverer_id || currentUser.value.id;
                     return allOrders.value.filter(o => {
-                        // 比较 ID (注意类型转换 ==)
                         const isMyOrder = o.courierId == myId || o.delivererId == myId;
                         const isActive = ['accepted', 'delivering', 'completed', 1, 2].includes(o.status);
+                        if(o.isMock && o.courierId == myId) return true;
                         return isMyOrder && isActive;
                     });
                 });
 
                 return {
-                    loginForm, currentUser, loading, loadingOrders, handleLogin, logout,
+                    loginForm, currentUser, loading, loadingOrders, handleLogin, logout, handleCommand,
                     activeTab, hallList, myList,
                     acceptOrder, completeOrder, refreshData, lastError,
-                    getStatusText, formatItems, formatTime
+                    getStatusText, formatItems, formatTime, getDisplayName, getAvatarText
                 };
             }
         }).use(ElementPlus).mount('#app');
