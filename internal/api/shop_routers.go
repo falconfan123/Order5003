@@ -13,7 +13,7 @@ func RegisterShopRoutes(r *gin.Engine, h *handlers.ShopHandler) {
 	g.POST("/getall", func(c *gin.Context) { h.GetAll(c) })
 	g.POST("/getshopnamebyshopid", func(c *gin.Context) { h.GetShopNameByShopID(c) })
 
-	//在下面实现/api/orders这一接口
-	//可以通过搜索前端    fetch(`/api/orders/all?shopid=${encodeURIComponent(currentShopId)}`)
+	//在下面实现/shop/getordersbyshopid这一接口
+	//可以通过搜索前端    fetch(`/shop/getordersbyshopid?shopid=${encodeURIComponent(currentShopId)}`)
 
 }

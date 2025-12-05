@@ -199,7 +199,7 @@
                 return;
             }
             // 拼接shopid到请求参数中
-            fetch(`/api/orders/all?shopid=${encodeURIComponent(currentShopId)}`)
+            fetch(`/shop/getordersbyshopid?shopid=${encodeURIComponent(currentShopId)}`)
                 .then(response => {
                     if (!response.ok) throw new Error('加载订单失败');
                     return response.json();
