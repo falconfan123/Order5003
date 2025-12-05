@@ -37,25 +37,6 @@ func (s *GormStore) GetOrderByID(id int) (bizmodel.Order, error) {
 	}, nil
 }
 
-func (s *GormStore) GetAllOrders() []bizmodel.Order { //取当前商家的所有Order 那我应该是查当前ShopId的Order
-	list, err := dao.ListOrders(s.db)
-	if err != nil {
-		return []bizmodel.Order{}
-	}
-	out := make([]bizmodel.Order, 0, len(list))
-	for _, e := range list {
-		out = append(out, bizmodel.Order{
-			OrderID:     e.OrderID,
-			UserID:      e.UserID,
-			ShopID:      e.ShopID,
-			TotalAmount: e.TotalAmount,
-			Status:      e.Status,
-			CreatedAt:   e.CreatedAt,
-		})
-	}
-	return out
-}
-
 func (s *GormStore) UpdateOrderStatus(id int, status bizmodel.OrderStatus) (bizmodel.Order, error) {
 	if err := dao.UpdateOrderStatus(s.db, id, string(status)); err != nil {
 		return bizmodel.Order{}, err

@@ -17,7 +17,6 @@ type MenuService interface {
 type OrderService interface {
 	CreateOrder(order bizmodel.Order) bizmodel.Order
 	GetOrderByID(id int) (bizmodel.Order, error)
-	GetAllOrders() []bizmodel.Order
 	UpdateOrderStatus(id int, status bizmodel.OrderStatus) (bizmodel.Order, error)
 	WithTransaction(ctx context.Context, fn func(tx *gorm.DB) error) error
 	GetDishByID(ctx context.Context, tx *gorm.DB, dishID int) (*bizmodel.Dishes, error)

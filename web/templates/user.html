@@ -618,19 +618,19 @@
                 };
                 const fetchOrderList = () => {
                     loadingOrders.value = true;
-                    if(USE_MOCK_DATA) {
-                        setTimeout(() => { orders.value = MOCK_ORDERS; loadingOrders.value = false; }, 500);
-                    } else {
-                        fetch('/order/getall', { 
-                            method: 'POST', 
-                            headers: {'Content-Type':'application/json'},
-                            body: JSON.stringify({ user_id: currentUser.value.id })
-                        })
+                    fetch('/orders/getall', { method: 'GET' })
                         .then(res => res.json())
-                        .then(data => { orders.value = Array.isArray(data) ? data : []; })
+                        .then(data => {
+                            const list = Array.isArray(data) ? data : [];
+                            orders.value = list.map(o => ({
+                                ...o,
+                                total_price: o.total_amount ?? o.totalPrice ?? 0,
+                                create_time: o.created_at ?? o.createTime ?? '',
+                                status: typeof o.status === 'string' ? o.status : (o.status === 3 ? '已完成' : o.status === 4 ? '已取消' : '准备中')
+                            }));
+                        })
                         .catch(() => ElMessage.error('获取订单列表失败'))
                         .finally(() => loadingOrders.value = false);
-                    }
                 };
                 
                 // 取消订单逻辑

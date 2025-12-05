@@ -147,8 +147,18 @@ func (h *OrderHandler) GetAllOrders(c *gin.Context) {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
 		return
 	}
-	orders := h.svc.GetAllOrders()
-	c.JSON(http.StatusOK, orders)
+	orderIDStr := c.Query("user_id")
+	orderID, err := strconv.Atoi(orderIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
+		return
+	}
+	order, err := h.svc.GetOrderByID(orderID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, order)
 }
 
 func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {

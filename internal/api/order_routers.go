@@ -7,7 +7,7 @@ import (
 )
 
 func RegisterOrderRoutes(r *gin.Engine, h *handlers.OrderHandler) {
-	r.Any("/api/orders", func(c *gin.Context) {
+	r.Any("/orders", func(c *gin.Context) {
 		switch c.Request.Method {
 		case "POST":
 			h.CreateOrder(c)
@@ -15,6 +15,6 @@ func RegisterOrderRoutes(r *gin.Engine, h *handlers.OrderHandler) {
 			c.Status(405)
 		}
 	})
-	r.GET("/api/orders/all", func(c *gin.Context) { h.GetAllOrders(c) })
-	r.PUT("/api/orders/status", func(c *gin.Context) { h.UpdateOrderStatus(c) })
+	r.GET("/orders/getall", func(c *gin.Context) { h.GetAllOrders(c) })
+	r.PUT("/orders/status", func(c *gin.Context) { h.UpdateOrderStatus(c) })
 }
