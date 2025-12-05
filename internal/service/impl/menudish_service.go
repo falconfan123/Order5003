@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-func (s *GormStore) GetAllMenuDishesByShopID(shopID int) ([]bizmodel.Dishes, error) {
+func (s *GormStore) GetMenuDishesByShopID(shopID int) ([]bizmodel.Dishes, error) {
 	shop, err := dao.GetShopByID(s.db, shopID) //根据商家的id取出商家信息
 	if err != nil {
 		return nil, fmt.Errorf("查询商家失败：%w", err)

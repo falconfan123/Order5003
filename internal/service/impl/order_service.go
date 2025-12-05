@@ -3,6 +3,7 @@ package impl
 import (
 	"Order5003/internal/bizmodel"
 	"Order5003/internal/dao"
+	"Order5003/internal/logger"
 	"Order5003/internal/model"
 	"context"
 	"errors"
@@ -87,21 +88,19 @@ func (s *GormStore) GetDishByID(ctx context.Context, tx *gorm.DB, dishID int) (*
 }
 
 func (s *GormStore) CreateOrderMaster(ctx context.Context, tx *gorm.DB, orderMaster *bizmodel.Order) (int, error) {
-	// 1. 业务模型 → 数据库模型 转换（bizmodel.Order → model.OrderEntity）
 	orderEntity := &model.OrderEntity{
 		UserID:      orderMaster.UserID,
 		ShopID:      orderMaster.ShopID,
 		TotalAmount: orderMaster.TotalAmount, // shopspring decimal，GORM自动映射数据库decimal
 		Status:      orderMaster.Status,      // 默认为"待支付"
 		CreatedAt:   time.Now(),              // 手动赋值（或依赖数据库默认值）
-		// 其他可选字段（DelivererID、PayTime等）：默认nil，对应数据库NULL
 	}
 
 	// 2. 调用 Dao 层插入（传递事务 tx）
 	if err := dao.CreateOrder(tx, orderEntity); err != nil {
 		return 0, fmt.Errorf("service创建订单主表失败：%v", err)
 	}
-
+	logger.Info("service创建订单主表成功：order_id=%d", orderEntity.OrderID)
 	// 3. GORM Create 后，orderEntity.OrderID 已被赋值为自增ID，直接返回
 	return orderEntity.OrderID, nil
 }

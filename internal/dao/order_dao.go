@@ -1,12 +1,17 @@
 package dao
 
 import (
+	"Order5003/internal/logger"
 	"Order5003/internal/model"
 
 	"gorm.io/gorm"
 )
 
 func CreateOrder(db *gorm.DB, e *model.OrderEntity) error {
+	dr := db.Session(&gorm.Session{DryRun: true}).Create(e)
+	if dr.Error == nil && dr.Statement != nil && dr.Statement.SQL.Len() > 0 {
+		logger.Info("GORM DryRun SQL", dr.Statement.SQL.String(), "VARS", dr.Statement.Vars)
+	}
 	if err := db.Create(e).Error; err != nil {
 		return err
 	}
