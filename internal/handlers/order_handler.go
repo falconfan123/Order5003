@@ -137,25 +137,6 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"order_id": createdOrderID, "message": "订单创建成功"})
 }
 
-func (h *OrderHandler) GetOrderByID(c *gin.Context) {
-	if c.Request.Method != http.MethodGet {
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
-		return
-	}
-	idStr := c.Query("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
-		return
-	}
-	order, err := h.svc.GetOrderByID(id)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, order)
-}
-
 func (h *OrderHandler) GetAllOrders(c *gin.Context) {
 	if c.Request.Method != http.MethodGet {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
@@ -163,40 +144,16 @@ func (h *OrderHandler) GetAllOrders(c *gin.Context) {
 	}
 	orderIDStr := c.Query("user_id")
 	orderID, err := strconv.Atoi(orderIDStr)
+	logger.Info("GetAllOrders, userID: %d", orderID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
 		return
 	}
-	order, err := h.svc.GetOrderByID(orderID)
+	order, err := h.svc.GetOrderByUserID(orderID)
+	logger.Info("GetOrderByUserID, order: %+v", order)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, order)
-}
-
-func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
-	if c.Request.Method != http.MethodPut {
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
-		return
-	}
-	idStr := c.Query("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
-		return
-	}
-	var statusUpdate struct {
-		Status bizmodel.OrderStatus `json:"status"`
-	}
-	if err := c.ShouldBindJSON(&statusUpdate); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
-	updatedOrder, err := h.svc.UpdateOrderStatus(id, statusUpdate.Status)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, updatedOrder)
 }

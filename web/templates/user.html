@@ -278,45 +278,47 @@
                         <el-button type="primary" @click="closeOrderList">去点餐</el-button>
                     </div>
 
-                    <div v-for="order in orders" :key="order.order_id || order.id" class="order-card">
+                    <div v-for="order in orders" :key="order.order_id" class="order-card">
                         <div class="order-header">
                             <div class="order-shop-name">
-                                <span>{{ order.shop_name || '未知商家' }}</span>
+                                <!-- 补充：根据shop_id显示商家名称（临时兜底） -->
+                                <span>{{ order.shop_name || `商家ID:${order.shop_id}` }}</span>
                                 <el-icon><arrow-right /></el-icon>
                             </div>
-                            <!-- 状态显示：根据 status 动态变化样式 -->
+                            <!-- 修复：status数字转文本，匹配样式类 -->
                             <span class="order-status" 
                                   :class="{
-                                      'completed': order.status === '已完成',
-                                      'pending': ['准备中', '待接单', '配送中'].includes(order.status),
-                                      'cancelled': order.status === '已取消'
+                                      'completed': order.status_text === '已完成',
+                                      'pending': ['待接单', '准备中', '配送中'].includes(order.status_text),
+                                      'cancelled': order.status_text === '已取消'
                                   }">
-                                {{ order.status || '准备中' }}
+                                {{ order.status_text }}
                             </span>
                         </div>
                         
-                        <!-- 菜品缩略图展示 -->
-                        <div class="order-dishes" v-if="order.dishes && order.dishes.length">
-                            <div v-for="dish in order.dishes" :key="dish.id" class="order-dish-item">
-                                <img :src="dish.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=60'" class="order-dish-img">
-                                <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ dish.name }}</div>
+                        <!-- 菜品区域：无菜品时显示订单金额相关 -->
+                        <div class="order-dishes" v-if="false">
+                            <div class="order-dish-item">
+                                <div class="order-dish-img" style="display:flex;align-items:center;justify-content:center;font-size:12px;">¥{{order.total_price}}</div>
+                                <div>订单金额</div>
                             </div>
                         </div>
                         <div v-else style="color:#999;font-size:14px;margin-bottom:10px;">
-                           共 {{ order.item_count || 1 }} 件商品
+                           订单ID：{{order.order_id}} | 共1件商品
                         </div>
 
                         <div class="order-footer">
-                            <span>{{ order.create_time || '刚刚' }}</span>
+                            <!-- 修复：时间格式化 -->
+                            <span>{{ order.create_time_format || order.created_at }}</span>
                             <div>
                                 <span style="margin-right:10px;">总计</span>
                                 <span class="order-price">¥{{ order.total_price }}</span>
                             </div>
                         </div>
                         <div style="text-align:right;margin-top:15px;border-top:1px solid #f9f9f9;padding-top:10px;">
-                            <!-- 取消订单按钮：仅在特定状态下显示 -->
+                            <!-- 修复：根据status_text判断是否显示取消按钮 -->
                             <el-button 
-                                v-if="['准备中', '待接单', '配送中'].includes(order.status || '准备中')" 
+                                v-if="['待接单', '准备中', '配送中'].includes(order.status_text)" 
                                 size="small" 
                                 type="danger" 
                                 plain 
@@ -332,7 +334,6 @@
             <!-- 2. 店铺列表页 (Home) -->
             <div v-else-if="!currentShopId">
                 <div class="category-nav">
-                    <!-- 修复1：传参改为 cat.type_id 而非 cat.keyword -->
                     <div class="cat-item" v-for="cat in categories" :class="{active: currentCategory===cat.name}" @click="handleCategoryClick(cat.name, cat.type_id)">
                         <div class="cat-icon" :style="{background:cat.color}"><el-icon><component :is="cat.icon" /></el-icon></div>
                         <div class="cat-text">{{cat.name}}</div>
@@ -374,7 +375,6 @@
                         <div v-for="dish in menuItems" :key="dish.id" style="background:white;border-radius:8px;overflow:hidden;box-shadow:0 2px 5px rgba(0,0,0,0.05);display:flex;flex-direction:column;">
                             <img :src="dish.image||'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'" style="height:140px;object-fit:cover;">
                             <div style="padding:10px;flex:1;display:flex;flex-direction:column;">
-                                <!-- 修复菜品名称显示：直接使用 dish.name -->
                                 <div style="font-weight:bold;">{{ dish.name }}</div>
                                 <div style="font-size:12px;color:#999;margin:5px 0 10px;flex:1;">{{ dish.description||'暂无描述' }}</div>
                                 <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -417,10 +417,8 @@
         const { User, Lock, Food, Shop, Plus, ShoppingCart, Search, StarFilled, SwitchButton, Location, ArrowDown, Back, ArrowRight, Tickets, Ticket, Present, ShoppingBag, Burger, Bowl, IceCream, CaretBottom } = ElementPlusIconsVue;
 
         // --- 配置 ---
-        // 完全删除模拟数据相关配置，强制对接真实接口
         const USE_MOCK_DATA = false; 
 
-        // --- 移除MOCK_MENU相关代码 ---
         const MOCK_SHOPS = [
             { shop_id: 1, shop_name: '菇的辣克 Good Luck', status: 1, delivery_fee: 0, delivery_range: 5.6, type: 3 }, 
             { shop_id: 2, shop_name: '韩餐 Hodori', status: 1, delivery_fee: 5, delivery_range: 2.3, type: 3 }, 
@@ -440,7 +438,7 @@
                 const currentUser = ref(null);
                 const loginForm = reactive({ username: 'admin', password: 'admin' });
                 const loading = ref(false);
-                const shops = ref([]); // 存储后端返回的店铺数据
+                const shops = ref([]); 
                 const loadingShops = ref(false);
                 const menuItems = ref([]);
                 const loadingMenu = ref(false);
@@ -474,7 +472,6 @@
                 // 登录
                 const handleLogin = () => {
                     loading.value = true;
-                    // 完全删除模拟登录逻辑，强制对接真实接口
                     fetch('/user/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(loginForm) })
                     .then(res => { if(!res.ok) throw new Error(); return res.json(); })
                     .then(data => { currentUser.value = data; fetchShops(); })
@@ -504,7 +501,6 @@
                 // 商家 & 菜单
                 const fetchShops = () => {
                     loadingShops.value = true;
-                    // 保留店铺模拟数据（可选），若后端/shop/getall未实现可临时启用
                     if (USE_MOCK_DATA) { 
                         setTimeout(() => { shops.value = MOCK_SHOPS; loadingShops.value = false; }, 300); 
                     } else {
@@ -524,7 +520,6 @@
                     }
                 };
 
-                // 完全删除MOCK_MENU相关逻辑，仅保留真实接口调用
                 const fetchMenu = (shopId) => {
                     loadingMenu.value = true;
                     fetch('/menudish/getmenudishesbyid', { 
@@ -538,9 +533,7 @@
                     })
                     .then(res => {
                         console.log('后端返回的菜单原始数据：', res);
-                        // 标准化菜品数据，确保id唯一
                         menuItems.value = (res.data||[]).map(item => {
-                            // 强制生成唯一ID，兜底后端无ID的情况
                             const id = item.dish_id ?? item.dishId ?? item.id ?? item.MenuID ?? `dish_${Date.now()}_${Math.floor(Math.random()*1000)}`;
                             const name = item.dish_name ?? item.dishName ?? item.name ?? `菜品#${id}`;
                             const price = item.price ?? item.Price ?? 0;
@@ -584,7 +577,6 @@
                 // 购物车 & 订单
                 const addToCart = (dish) => {
                     console.log('准备添加到购物车的菜品：', dish);
-                    // 按店铺+菜品ID双重判断，避免跨店/同店重复
                     const exist = cart.value.find(i=>i.shop_id === dish.shop_id && i.id === dish.id);
                     if(exist) {
                         exist.quantity++;
@@ -646,7 +638,7 @@
                     .finally(() => submitting.value = false);
                 };
 
-                // --- 订单历史逻辑 ---
+                // --- 核心修复：订单列表逻辑 ---
                 const openOrderList = () => {
                     showOrderHistory.value = true;
                     currentShopId.value = null; 
@@ -657,18 +649,44 @@
                 };
                 const fetchOrderList = () => {
                     loadingOrders.value = true;
-                    fetch('/orders/getall', { method: 'GET' })
-                        .then(res => res.json())
-                        .then(data => {
-                            const list = Array.isArray(data) ? data : [];
-                            orders.value = list.map(o => ({
-                                ...o,
-                                total_price: o.total_amount ?? o.totalPrice ?? 0,
-                                create_time: o.created_at ?? o.createTime ?? '',
-                                status: typeof o.status === 'string' ? o.status : (o.status === 3 ? '已完成' : o.status === 4 ? '已取消' : '准备中')
-                            }));
+                    // 1. 调试：打印请求URL
+                    const requestUrl = `/orders/getallbyid?user_id=${currentUser.value.id}`;
+                    console.log('请求订单列表URL：', requestUrl);
+                    
+                    fetch(requestUrl, { method: 'GET' })
+                        .then(res => {
+                            // 2. 调试：打印响应状态
+                            console.log('订单接口响应状态：', res.status, res.ok);
+                            return res.json();
                         })
-                        .catch(() => ElMessage.error('获取订单列表失败'))
+                        .then(data => {
+                            // 3. 调试：打印原始返回数据
+                            console.log('订单接口原始返回数据：', data);
+                            let list = [];
+                            if (typeof data === 'object' && data !== null) {
+                                if (!Array.isArray(data)) { list = [data]; } else { list = data; }
+                            }
+                            console.log('格式化前订单列表：', list);
+                            const statusMap = { 0: '未下单', 1: '待支付', 2: '待接单', 3: '已自我取消', 4: '待配送', 5: '配送中', 6: '已完成', 7: '已被商家取消', 8: '备餐中' };
+                            const formatTime = (timeStr) => { if (!timeStr) return '未知时间'; try { return new Date(timeStr).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch (e) { return timeStr; } };
+                            orders.value = list.map(o => ({
+                                order_id: o.order_id,
+                                user_id: o.user_id,
+                                shop_id: o.shop_id,
+                                total_amount: o.total_amount,
+                                status: o.status,
+                                created_at: o.created_at,
+                                total_price: o.total_amount || 0,
+                                create_time_format: formatTime(o.created_at),
+                                status_text: statusMap[o.status] || '准备中',
+                                shop_name: `商家ID:${o.shop_id}`
+                            }));
+                            console.log('格式化后订单列表：', orders.value);
+                        })
+                        .catch(err => {
+                            console.error('获取订单列表失败：', err);
+                            ElMessage.error('获取订单列表失败');
+                        })
                         .finally(() => loadingOrders.value = false);
                 };
                 
@@ -679,7 +697,7 @@
                         cancelButtonText: '点错了',
                         type: 'warning'
                     }).then(() => {
-                        const orderId = order.order_id || order.id; 
+                        const orderId = order.order_id; 
                         fetch('/api/orders/cancel', {
                             method: 'POST',
                             headers: {'Content-Type':'application/json'},
@@ -687,7 +705,7 @@
                         })
                         .then(res => {
                             if (res.ok) {
-                                order.status = '已取消'; 
+                                order.status_text = '已取消'; 
                                 ElMessage.success('订单已取消');
                             } else {
                                 ElMessage.error('取消失败，请联系商家');
@@ -705,11 +723,8 @@
                 const handleSort = (t) => currentSort.value=t;
                 const computedShops = computed(() => {
                     let res = [...shops.value];
-                    // 关键词筛选
                     if(searchKeyword.value) res = res.filter(s=>s.shop_name.includes(searchKeyword.value));
-                    // 分类筛选
                     if(currentType.value !== 0) res = res.filter(s=>s.type === currentType.value);
-                    // 排序
                     if(currentSort.value==='distance') res.sort((a,b)=>(a.delivery_range||0)-(b.delivery_range||0));
                     if(currentSort.value==='price') res.sort((a,b)=>(a.delivery_fee||0)-(b.delivery_fee||0));
                     return res;
@@ -729,16 +744,13 @@
                     locationDialogVisible, currentAddress, mockAddresses, selectAddress, addNewAddress,
                     showOrderHistory, orders, loadingOrders, openOrderList, closeOrderList, cancelOrder,
                     User, Lock,
+                    JSON // 暴露JSON用于模板调试
                 };
             }
         });
 
         app.use(ElementPlus);
         for (const [key, component] of Object.entries(ElementPlusIconsVue)) { app.component(key, component) }
-        app.component('IceCream', ElementPlusIconsVue.IceCream);
-        app.component('Burger', ElementPlusIconsVue.Burger);
-        app.component('Bowl', ElementPlusIconsVue.Bowl);
-        app.component('ShoppingBag', ElementPlusIconsVue.ShoppingBag);
         app.mount('#app');
     </script>
 </body>

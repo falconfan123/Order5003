@@ -18,9 +18,9 @@ func CreateOrder(db *gorm.DB, e *model.OrderEntity) error {
 	return nil
 }
 
-func GetOrderByID(db *gorm.DB, id int) (*model.OrderEntity, error) {
+func GetOrderByUserID(db *gorm.DB, userID int) (*model.OrderEntity, error) {
 	var e model.OrderEntity
-	if err := db.First(&e, id).Error; err != nil {
+	if err := db.First(&e, "user_id = ?", userID).Error; err != nil {
 		return nil, err
 	}
 	return &e, nil

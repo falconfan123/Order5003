@@ -23,8 +23,8 @@ func (s *GormStore) CreateOrder(order bizmodel.Order) bizmodel.Order {
 	return order
 }
 
-func (s *GormStore) GetOrderByID(id int) (bizmodel.Order, error) {
-	e, err := dao.GetOrderByID(s.db, id)
+func (s *GormStore) GetOrderByUserID(userID int) (bizmodel.Order, error) {
+	e, err := dao.GetOrderByUserID(s.db, userID)
 	if err != nil {
 		return bizmodel.Order{}, errors.New("order not found")
 	}
@@ -36,13 +36,6 @@ func (s *GormStore) GetOrderByID(id int) (bizmodel.Order, error) {
 		Status:      e.Status,
 		CreatedAt:   e.CreatedAt,
 	}, nil
-}
-
-func (s *GormStore) UpdateOrderStatus(id int, status bizmodel.OrderStatus) (bizmodel.Order, error) {
-	if err := dao.UpdateOrderStatus(s.db, id, string(status)); err != nil {
-		return bizmodel.Order{}, err
-	}
-	return s.GetOrderByID(id)
 }
 
 func (s *GormStore) WithTransaction(ctx context.Context, fn func(tx *gorm.DB) error) error {
