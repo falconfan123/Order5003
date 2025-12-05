@@ -192,69 +192,81 @@
 
         // 核心修改2：请求订单接口时传递shopid（GET方式拼接query参数）
         function loadOrders() {
-            // 校验店铺ID是否存在
             if (!currentShopId) {
                 alert('未获取到店铺ID，无法加载订单！');
                 document.getElementById('orders-container').innerHTML = '<p>未获取到店铺ID</p>';
                 return;
             }
-            // 拼接shopid到请求参数中
-            fetch(`/shop/getordersbyshopid?shopid=${encodeURIComponent(currentShopId)}`)
-                .then(response => {
-                    if (!response.ok) throw new Error('加载订单失败');
-                    return response.json();
-                })
-                .then(orders => { 
-                    const c = document.getElementById('orders-container'); 
-                    if (orders.length === 0) {
-                        c.innerHTML = '<p>暂无订单</p>';
-                        return;
-                    }
-                    // 补充：渲染订单列表（原代码未渲染，此处添加基础渲染）
+            fetch(`/shop/getordersbyshopid?shop_id=${encodeURIComponent(currentShopId)}`)
+                .then(r => { if (!r.ok) throw new Error('加载订单失败'); return r.json(); })
+                .then(list => {
+                    const c = document.getElementById('orders-container');
+                    if (!Array.isArray(list) || list.length === 0) { c.innerHTML = '<p>暂无订单</p>'; return; }
+                    const statusText = {
+                        0: '未下单',
+                        1: '待支付',
+                        2: '待接单',
+                        3: '已自我取消',
+                        4: '待配送',
+                        5: '配送中',
+                        6: '已完成',
+                        7: '已被商家取消',
+                        8: '备餐中'
+                    };
+                    const fmtAmount = (x) => {
+                        if (x == null) return '0.00';
+                        if (typeof x === 'string') { const n = Number(x); return isNaN(n) ? '0.00' : n.toFixed(2); }
+                        if (typeof x === 'number') return x.toFixed(2);
+                        return '0.00';
+                    };
                     c.innerHTML = '';
-                    orders.forEach(order => {
+                    list.forEach(o => {
+                        const oid = o.order_id || o.OrderID;
+                        const uid = o.user_id || o.UserID;
+                        const amt = fmtAmount(o.total_amount || o.TotalAmount);
+                        const st = o.status || o.Status;
+                        const ct = o.created_at || o.CreatedAt;
                         const orderItem = document.createElement('div');
                         orderItem.className = 'order-item';
                         orderItem.innerHTML = `
                             <div class="order-header">
-                                <span>订单ID: ${order.id || '未知'}</span>
-                                <select class="status-select" onchange="updateOrderStatus(${order.id}, this.value)">
-                                    <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>待处理</option>
-                                    <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>处理中</option>
-                                    <option value="completed" ${order.status === 'completed' ? 'selected' : ''}>已完成</option>
-                                    <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>已取消</option>
+                                <span>订单ID: ${oid ?? '未知'}</span>
+                                <select class="status-select" onchange="updateOrderStatus(${oid}, this.value)">
+                                    <option value="0" ${st === 0 ? 'selected' : ''}>未下单</option>
+                                    <option value="1" ${st === 1 ? 'selected' : ''}>待支付</option>
+                                    <option value="2" ${st === 2 ? 'selected' : ''}>待接单</option>
+                                    <option value="3" ${st === 3 ? 'selected' : ''}>已自我取消</option>
+                                    <option value="4" ${st === 4 ? 'selected' : ''}>待配送</option>
+                                    <option value="5" ${st === 5 ? 'selected' : ''}>配送中</option>
+                                    <option value="6" ${st === 6 ? 'selected' : ''}>已完成</option>
+                                    <option value="7" ${st === 7 ? 'selected' : ''}>已被商家取消</option>
+                                    <option value="8" ${st === 8 ? 'selected' : ''}>备餐中</option>
                                 </select>
                             </div>
                             <div class="order-details">
-                                <p>用户ID: ${order.userId || '未知'}</p>
-                                <p>菜品: ${order.items?.map(item => `${item.name} x ${item.quantity}`).join(', ') || '无'}</p>
-                                <p>总价: ¥${order.totalPrice?.toFixed(2) || '0.00'}</p>
-                                <p>下单时间: ${order.createTime ? new Date(order.createTime).toLocaleString() : '未知'}</p>
+                                <p>用户ID: ${uid ?? '未知'}</p>
+                                <p>订单状态: ${statusText[st] ?? '未知'}</p>
+                                <p>总价: ¥${amt}</p>
+                                <p>下单时间: ${ct ? new Date(ct).toLocaleString() : '未知'}</p>
                             </div>
                         `;
                         c.appendChild(orderItem);
                     });
                 })
-                .catch(error => {
-                    console.error('加载订单失败:', error);
+                .catch(() => {
                     document.getElementById('orders-container').innerHTML = '<p>加载订单失败，请重试</p>';
                 });
         }
 
         // 新增：订单状态更新函数（预留，可根据后端接口完善）
         function updateOrderStatus(orderId, status) {
-            if (!currentShopId) {
-                alert('未获取到店铺ID，无法更新订单状态！');
-                return;
-            }
-            fetch(`/api/orders/update?shopid=${encodeURIComponent(currentShopId)}`, {
+            if (!currentShopId) { alert('未获取到店铺ID，无法更新订单状态！'); return; }
+            const payload = { order_id: orderId, status: Number(status), shop_id: Number(currentShopId) };
+            fetch(`/api/orders/update?shop_id=${encodeURIComponent(currentShopId)}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderId, status })
-            }).then(response => {
-                if (!response.ok) throw new Error('更新失败');
-                loadOrders(); // 刷新订单列表
-            }).catch(() => alert('订单状态更新失败'));
+                body: JSON.stringify(payload)
+            }).then(r => { if (!r.ok) throw new Error('更新失败'); loadOrders(); }).catch(() => alert('订单状态更新失败'));
         }
 
         function loadMenu() { 
