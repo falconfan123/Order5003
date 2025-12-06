@@ -23,19 +23,23 @@ func (s *GormStore) CreateOrder(order bizmodel.Order) bizmodel.Order {
 	return order
 }
 
-func (s *GormStore) GetOrderByUserID(userID int) (bizmodel.Order, error) {
-	e, err := dao.GetOrderByUserID(s.db, userID)
+func (s *GormStore) GetOrderByUserID(userID int) ([]bizmodel.Order, error) {
+	e, err := dao.GetOrdersByUserID(s.db, userID)
 	if err != nil {
-		return bizmodel.Order{}, errors.New("order not found")
+		return nil, errors.New("order not found")
 	}
-	return bizmodel.Order{
-		OrderID:     e.OrderID,
-		UserID:      e.UserID,
-		ShopID:      e.ShopID,
-		TotalAmount: e.TotalAmount,
-		Status:      e.Status,
-		CreatedAt:   e.CreatedAt,
-	}, nil
+	var orders []bizmodel.Order
+	for _, orderEntity := range e {
+		orders = append(orders, bizmodel.Order{
+			OrderID:     orderEntity.OrderID,
+			UserID:      orderEntity.UserID,
+			ShopID:      orderEntity.ShopID,
+			TotalAmount: orderEntity.TotalAmount,
+			Status:      orderEntity.Status,
+			CreatedAt:   orderEntity.CreatedAt,
+		})
+	}
+	return orders, nil
 }
 
 func (s *GormStore) WithTransaction(ctx context.Context, fn func(tx *gorm.DB) error) error {

@@ -149,11 +149,11 @@ func (h *OrderHandler) GetAllOrders(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
 		return
 	}
-	order, err := h.svc.GetOrderByUserID(orderID)
-	logger.Info("GetOrderByUserID, order: %+v", order)
+	orders, err := h.svc.GetOrderByUserID(orderID)
+	logger.Info("GetOrderByUserID, orders: %+v", orders)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, order)
+	c.JSON(http.StatusOK, orders)
 }

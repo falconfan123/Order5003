@@ -31,8 +31,7 @@
             background-color: var(--bg-color);
             color: var(--text-main);
             height: 100vh;
-            overflow: hidden;
-            /* 防止双重滚动条 */
+            overflow: hidden; /* 防止双重滚动条 */
         }
 
         #app {
@@ -53,8 +52,7 @@
             flex-shrink: 0;
             z-index: 100;
         }
-        .header-left, .header-right { display: flex; align-items: center; gap: 20px;
-        }
+        .header-left, .header-right { display: flex; align-items: center; gap: 20px; }
         
         .brand-logo {
             display: flex;
@@ -76,14 +74,10 @@
         }
         
         .location-selector {
-            display: flex;
-            align-items: center; gap: 8px; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer;
         }
-        .search-bar { flex: 1;
-            max-width: 500px; margin: 0 40px; }
-        .el-input__wrapper { border-radius: 24px !important;
-            background-color: #f2f4f7 !important; padding: 4px 15px !important; box-shadow: none !important;
-        }
+        .search-bar { flex: 1; max-width: 500px; margin: 0 40px; }
+        .el-input__wrapper { border-radius: 24px !important; background-color: #f2f4f7 !important; padding: 4px 15px !important; box-shadow: none !important; }
 
         /* 用户下拉菜单样式 */
         .user-dropdown-link {
@@ -111,50 +105,26 @@
         }
 
         /* --- Home View Styles --- */
-        .category-nav { display: flex;
-            justify-content: space-between; margin-bottom: 30px; }
-        .cat-item { display: flex; flex-direction: column; align-items: center;
-            gap: 10px; cursor: pointer; opacity: 0.8; transition: 0.2s; }
-        .cat-item:hover, .cat-item.active { opacity: 1;
-            transform: translateY(-2px); }
-        .cat-icon { width: 56px; height: 56px; border-radius: 50%; display: flex;
-            align-items: center; justify-content: center; color: white; font-size: 24px; }
+        .category-nav { display: flex; justify-content: space-between; margin-bottom: 30px; }
+        .cat-item { display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer; opacity: 0.8; transition: 0.2s; }
+        .cat-item:hover, .cat-item.active { opacity: 1; transform: translateY(-2px); }
+        .cat-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; }
         
-        .filter-bar { display: flex;
-            gap: 12px; margin-bottom: 24px; }
-        .filter-tag { background: white; border: 1px solid #ddd;
-            padding: 6px 16px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;
-        }
-        .filter-tag.active { background: #e0fbf9; color: var(--primary-color); border-color: var(--primary-color);
-        }
+        .filter-bar { display: flex; gap: 12px; margin-bottom: 24px; }
+        .filter-tag { background: white; border: 1px solid #ddd; padding: 6px 16px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; }
+        .filter-tag.active { background: #e0fbf9; color: var(--primary-color); border-color: var(--primary-color); }
 
-        .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px;
-        }
-        .shop-card { background: white; border-radius: 12px; overflow: hidden; cursor: pointer; transition: 0.2s;
-        }
-        .shop-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.08);
-        }
-        .shop-img-wrapper { height: 160px; position: relative;
-        }
-        .shop-img { width: 100%; height: 100%; object-fit: cover;
-        }
-        .shop-info { padding: 16px;
-        }
+        .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+        .shop-card { background: white; border-radius: 12px; overflow: hidden; cursor: pointer; transition: 0.2s; }
+        .shop-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
+        .shop-img-wrapper { height: 160px; position: relative; }
+        .shop-img { width: 100%; height: 100%; object-fit: cover; }
+        .shop-info { padding: 16px; }
 
         /* --- Menu View Styles --- */
-        .menu-layout { 
-            display: flex;
-            /* 修改：使用 calc 补偿负 margin 带来的高度/宽度缺失，确保完美填充满 padding 后的容器 */
-            height: calc(100% + 48px); 
-            width: calc(100% + 80px);
-            overflow: hidden; 
-            margin: -24px -40px; /* 抵消 main padding */
-        } 
-        .menu-main { flex: 1;
-            overflow-y: auto; padding: 20px 40px; background: #f7f8fa; }
-        .menu-cart-sidebar { width: 360px;
-            background: white; border-left: 1px solid #eee; display: flex; flex-direction: column;
-        }
+        .menu-layout { display: flex; height: 100%; overflow-x: hidden; overflow-y: hidden; margin: 0; width: 100%; box-sizing: border-box; }
+        .menu-main { flex: 1; overflow-y: auto; padding: 20px 24px; background: #f7f8fa; box-sizing: border-box; }
+        .menu-cart-sidebar { width: 340px; max-width: 40vw; background: white; border-left: 1px solid #eee; display: flex; flex-direction: column; box-sizing: border-box; }
 
         /* --- Order History Styles --- */
         .order-card {
@@ -166,8 +136,7 @@
             border: 1px solid #f0f0f0;
             transition: all 0.3s;
         }
-        .order-card:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        }
+        .order-card:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         .order-header {
             display: flex;
             justify-content: space-between;
@@ -176,18 +145,12 @@
             padding-bottom: 12px;
             margin-bottom: 12px;
         }
-        .order-shop-name { font-weight: 900; font-size: 18px; display: flex; align-items: center; gap: 8px;
-        }
+        .order-shop-name { font-weight: 900; font-size: 18px; display: flex; align-items: center; gap: 8px; }
         
-        .order-status { font-size: 14px;
-            font-weight: bold; padding: 4px 10px; border-radius: 4px; background: #f5f5f5; color: #999;
-        }
-        .order-status.completed { background: #e0fbf9; color: var(--primary-color);
-        }
-        .order-status.pending { background: #fff7e6; color: #fa8c16;
-        }
-        .order-status.cancelled { background: #fff1f0; color: #ff4d4f;
-        }
+        .order-status { font-size: 14px; font-weight: bold; padding: 4px 10px; border-radius: 4px; background: #f5f5f5; color: #999; }
+        .order-status.completed { background: #e0fbf9; color: var(--primary-color); }
+        .order-status.pending { background: #fff7e6; color: #fa8c16; }
+        .order-status.cancelled { background: #fff1f0; color: #ff4d4f; }
         
         .order-dishes {
             display: flex;
@@ -218,24 +181,17 @@
             font-size: 14px;
             color: #666;
         }
-        .order-price { font-size: 18px;
-            font-weight: bold; color: #333; }
+        .order-price { font-size: 18px; font-weight: bold; color: #333; }
 
         /* Overrides */
-        .el-button--primary { --el-button-bg-color: var(--primary-color);
-            --el-button-border-color: var(--primary-color); }
-        .el-button--primary:hover { --el-button-bg-color: var(--primary-dark); --el-button-border-color: var(--primary-dark);
-        }
-        .address-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;
-        }
-        .address-item:hover { background: #f9f9f9;
-        }
-        .address-item.selected { color: var(--primary-color); font-weight: bold; background: #e0fbf9;
-        }
+        .el-button--primary { --el-button-bg-color: var(--primary-color); --el-button-border-color: var(--primary-color); }
+        .el-button--primary:hover { --el-button-bg-color: var(--primary-dark); --el-button-border-color: var(--primary-dark); }
+        .address-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; }
+        .address-item:hover { background: #f9f9f9; }
+        .address-item.selected { color: var(--primary-color); font-weight: bold; background: #e0fbf9; }
         
         /* Dropdown custom */
-        .el-dropdown-menu__item:not(.is-disabled):focus { background-color: #e0fbf9;
-            color: var(--primary-color); }
+        .el-dropdown-menu__item:not(.is-disabled):focus { background-color: #e0fbf9; color: var(--primary-color); }
     </style>
 </head>
 <body>
@@ -245,16 +201,13 @@
             <div style="background:white;padding:40px;border-radius:16px;width:400px;text-align:center;">
                 <div class="brand-logo" style="justify-content:center;margin-bottom:20px;">
                     <div class="brand-logo-icon"><el-icon><food /></el-icon></div>
-                
                     <span>饭团外卖</span>
                 </div>
                 <h3 style="color:#666;margin-bottom:20px;">账号登录</h3>
                 <el-form :model="loginForm" @submit.prevent="handleLogin">
                     <el-form-item><el-input v-model="loginForm.username" placeholder="用户名" :prefix-icon="User" size="large"/></el-form-item>
-                    <el-form-item><el-input 
-                        v-model="loginForm.password" type="password" placeholder="密码" :prefix-icon="Lock" show-password size="large"/></el-form-item>
-                    <el-button type="primary" style="width:100%;border-radius:20px;"
-                        size="large" :loading="loading" @click="handleLogin">登录 / 注册</el-button>
+                    <el-form-item><el-input v-model="loginForm.password" type="password" placeholder="密码" :prefix-icon="Lock" show-password size="large"/></el-form-item>
+                    <el-button type="primary" style="width:100%;border-radius:20px;" size="large" :loading="loading" @click="handleLogin">登录 / 注册</el-button>
                 </el-form>
                 <div style="margin-top:15px;color:#999;font-size:12px;">演示账号: admin / admin</div>
             </div>
@@ -262,14 +215,12 @@
 
         <!-- 地址选择弹窗 -->
         <el-dialog v-model="locationDialogVisible" title="选择收货地址" width="400px">
-            <div v-for="(addr, index) in mockAddresses" :key="index" class="address-item" 
-                :class="{selected: currentAddress===addr}" @click="selectAddress(addr)">
+            <div v-for="(addr, index) in mockAddresses" :key="index" class="address-item" :class="{selected: currentAddress===addr}" @click="selectAddress(addr)">
                 <div style="display:flex;align-items:center;gap:8px;">
                     <el-icon><location /></el-icon><span>{{ addr }}</span>
                 </div>
             </div>
-            <div style="padding:10px;text-align:center;color:#999;cursor:pointer;"
-                @click="addNewAddress"><el-icon><plus /></el-icon> 新增地址</div>
+            <div style="padding:10px;text-align:center;color:#999;cursor:pointer;" @click="addNewAddress"><el-icon><plus /></el-icon> 新增地址</div>
         </el-dialog>
 
         <!-- Header -->
@@ -278,39 +229,32 @@
                 <div class="brand-logo" @click="backToHome">
                     <div class="brand-logo-icon"><el-icon><food /></el-icon></div><span>饭团外卖</span>
                 </div>
- 
                 <div class="location-selector" @click="locationDialogVisible=true">
                     <el-icon><location /></el-icon><span>{{ currentAddress }}</span><el-icon><arrow-down /></el-icon>
                 </div>
             </div>
             <div class="search-bar">
-                <el-input v-model="searchKeyword" 
-                    prefix-icon="Search" placeholder="搜索商家..." clearable />
+                <el-input v-model="searchKeyword" prefix-icon="Search" placeholder="搜索商家..." clearable />
             </div>
             <div class="header-right">
                 <!-- 用户头像下拉菜单 -->
                 <el-dropdown trigger="click" @command="handleUserCommand">
                     <div class="user-dropdown-link">
-               
                         <div style="text-align:right;line-height:1.2;">
                             <div style="font-weight:bold;color:#333;">{{ currentUser.username }}</div>
                             <div style="font-size:12px;color:#999;">SVIP会员</div>
                         </div>
-      
                         <el-avatar :size="36" style="background:#e0fbf9;color:var(--primary-color);">{{ (currentUser.username||'U')[0] }}</el-avatar>
                         <el-icon style="color:#999"><caret-bottom /></el-icon>
                     </div>
                     <template #dropdown>
-           
                         <el-dropdown-menu>
                             <el-dropdown-item command="orders" style="font-weight:bold;">
                                 <el-icon><tickets /></el-icon>我的订单
-                        
                             </el-dropdown-item>
                             <el-dropdown-item divided command="logout" style="color:#f56c6c;">
                                 <el-icon><switch-button /></el-icon>退出登录
                             </el-dropdown-item>
-    
                         </el-dropdown-menu>
                     </template>
                 </el-dropdown>
@@ -318,90 +262,70 @@
         </header>
 
         <!-- Main Content Switcher -->
-        <div v-if="currentUser" class="main-container">
+        <div v-if="currentUser" class="main-container" :style="currentShopId ? 'padding:0;max-width:100%;' : ''">
             
             <!-- 1. 订单列表页 (Order History) -->
             <div v-if="showOrderHistory" style="max-width:800px;margin:0 auto;padding-top:20px;">
                 <div style="margin-bottom:20px;display:flex;align-items:center;gap:10px;">
                     <el-button circle @click="closeOrderList"><el-icon><back /></el-icon></el-button>
-             
                     <h2 style="margin:0;">我的订单</h2>
                 </div>
                 
                 <div v-loading="loadingOrders">
                     <div v-if="orders.length === 0" style="text-align:center;padding:60px;color:#999;">
-                   
                         <el-icon size="60"><tickets /></el-icon>
                         <p>暂无订单记录</p>
                         <el-button type="primary" @click="closeOrderList">去点餐</el-button>
                     </div>
 
-                    <div v-for="order in 
-                        orders" :key="order.order_id" class="order-card">
+                    <div v-for="order in orders" :key="order.order_id" class="order-card">
                         <div class="order-header">
                             <div class="order-shop-name">
                                 <!-- 补充：根据shop_id显示商家名称（临时兜底） -->
-          
-                                <span>{{ order.shop_name ||
-                                    `商家ID:${order.shop_id}` }}</span>
+                                <span>{{ order.shop_name || `商家ID:${order.shop_id}` }}</span>
                                 <el-icon><arrow-right /></el-icon>
                             </div>
                             <!-- 修复：status数字转文本，匹配样式类 -->
-        
                             <span class="order-status" 
                                   :class="{
                                       'completed': order.status_text === '已完成',
-   
                                       'pending': ['待接单', '准备中', '配送中'].includes(order.status_text),
                                       'cancelled': order.status_text === '已取消'
-                     
                                   }">
                                 {{ order.status_text }}
                             </span>
                         </div>
- 
                         
                         <!-- 菜品区域：无菜品时显示订单金额相关 -->
                         <div class="order-dishes" v-if="false">
-                         
                             <div class="order-dish-item">
                                 <div class="order-dish-img" style="display:flex;align-items:center;justify-content:center;font-size:12px;">¥{{order.total_price}}</div>
                                 <div>订单金额</div>
                             </div>
-  
                         </div>
                         <div v-else style="color:#999;font-size:14px;margin-bottom:10px;">
-                           订单ID：{{order.order_id}} |
-                            共1件商品
+                           订单ID：{{order.order_id}} | 共1件商品
                         </div>
 
                         <div class="order-footer">
                             <!-- 修复：时间格式化 -->
-                     
-                            <span>{{ order.create_time_format ||
-                                order.created_at }}</span>
+                            <span>{{ order.create_time_format || order.created_at }}</span>
                             <div>
                                 <span style="margin-right:10px;">总计</span>
                                 <span class="order-price">¥{{ order.total_price }}</span>
-   
                             </div>
                         </div>
                         <div style="text-align:right;margin-top:15px;border-top:1px solid #f9f9f9;padding-top:10px;">
-                        
                             <!-- 修复：根据status_text判断是否显示取消按钮 -->
                             <el-button 
                                 v-if="['待接单', '准备中', '配送中'].includes(order.status_text)" 
-                              
                                 size="small" 
                                 type="danger" 
                                 plain 
-                               
                                 @click="cancelOrder(order)"
                             >取消订单</el-button>
-                            <!-- 【已删除】：联系商家按钮 -->
-                            <!-- 【修改】：再来一单绑定事件 -->
-                            <el-button type="primary" size="small" plain @click="orderAgain(order)">再来一单</el-button>
-           
+                            <el-button size="small">联系商家</el-button>
+                            <el-button type="primary" size="small" plain>再来一单</el-button>
                         </div>
                     </div>
                 </div>
@@ -409,38 +333,30 @@
 
             <!-- 2. 店铺列表页 (Home) -->
             <div v-else-if="!currentShopId">
-          
                 <div class="category-nav">
                     <div class="cat-item" v-for="cat in categories" :class="{active: currentCategory===cat.name}" @click="handleCategoryClick(cat.name, cat.type_id)">
                         <div class="cat-icon" :style="{background:cat.color}"><el-icon><component :is="cat.icon" /></el-icon></div>
                         <div class="cat-text">{{cat.name}}</div>
-            
                     </div>
                 </div>
                 <div class="filter-bar">
                     <div class="filter-tag" :class="{active: currentSort==='default'}" @click="handleSort('default')">综合排序</div>
                     <div class="filter-tag" :class="{active: currentSort==='distance'}" @click="handleSort('distance')">距离最近</div>
-           
                     <div class="filter-tag" :class="{active: currentSort==='price'}" @click="handleSort('price')">配送费最低</div>
                 </div>
                 <div class="shop-grid" v-loading="loadingShops">
                     <div v-for="shop in computedShops" :key="shop.shop_id" class="shop-card" @click="handleSelectShop(shop)">
                         <div class="shop-img-wrapper">
-  
-                            <img :src="shop.image ||
-                                'https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'" class="shop-img" :style="shop.status!==1?'filter:grayscale(1)':''">
+                            <img :src="shop.image || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'" class="shop-img" :style="shop.status!==1?'filter:grayscale(1)':''">
                             <div v-if="shop.status===1" style="position:absolute;top:0;left:0;background:#00cbd3;color:white;font-size:12px;padding:2px 6px;border-bottom-right-radius:8px;">新客减10</div>
                             <div v-if="shop.status!==1" style="position:absolute;inset:0;background:rgba(255,255,255,0.7);display:flex;justify-content:center;align-items:center;font-weight:bold;color:#666;">休息中</div>
                         </div>
-             
                         <div class="shop-info">
                             <div style="font-weight:900;font-size:16px;margin-bottom:6px;">{{ shop.shop_name }}</div>
                             <div style="font-size:12px;color:#666;display:flex;align-items:center;gap:10px;">
-                            
                                 <span style="color:#ffaa00;font-weight:bold;"><el-icon><star-filled /></el-icon> 4.8</span>
                                 <span>{{ (shop.delivery_range||0).toFixed(1) }}km</span>
                                 <span>配送 ¥{{ (shop.delivery_fee||0).toFixed(0) }}</span>
-                        
                             </div>
                         </div>
                     </div>
@@ -448,47 +364,36 @@
                 </div>
             </div>
 
-  
             <!-- 3. 点餐页 (Menu) -->
             <div v-else class="menu-layout">
                 <main class="menu-main" v-loading="loadingMenu">
-                    <div style="margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+                    <div style="margin-bottom:16px;display:flex;align-items:center;gap:10px;">
                         <el-button circle @click="backToHome"><el-icon><back /></el-icon></el-button>
-      
-                        <h2 style="margin:0;">{{ currentShopName }}</h2>
+                        <h2 style="margin:0;line-height:1.2;">{{ currentShopName }}</h2>
                     </div>
                     <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:15px;">
                         <div v-for="dish in menuItems" :key="dish.id" style="background:white;border-radius:8px;overflow:hidden;box-shadow:0 2px 5px rgba(0,0,0,0.05);display:flex;flex-direction:column;">
-    
                             <img :src="dish.image||'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'" style="height:140px;object-fit:cover;">
                             <div style="padding:10px;flex:1;display:flex;flex-direction:column;">
                                 <div style="font-weight:bold;">{{ dish.name }}</div>
-          
                                 <div style="font-size:12px;color:#999;margin:5px 0 10px;flex:1;">{{ dish.description||'暂无描述' }}</div>
                                 <div style="display:flex;justify-content:space-between;align-items:center;">
                                     <span style="color:#ff4d4f;font-weight:bold;">¥{{ dish.price }}</span>
- 
                                     <el-button type="primary" circle size="small" @click="addToCart(dish)"><el-icon><plus /></el-icon></el-button>
                                 </div>
-                            
                             </div>
                         </div>
                     </div>
                 </main>
                 <aside class="menu-cart-sidebar">
-                    
-                    <!-- 【修改】：整个购物车模块沉底 -->
-                    <!-- 用一个空的div把下面的内容挤到底部 (Spacer) -->
-                    <div style="flex:1;"></div>
-                    
-                    <!-- 【修改】结构顺序：先菜品列表 -> 再购物车Header -> 最后结算栏 -->
-
-                    <!-- 1. 购物车列表：设置max-height限制高度 -->
-                    <div style="overflow-y:auto;padding:15px;max-height:60vh;background:white;border-bottom:1px solid #eee;">
-                        <div v-if="cart.length===0" style="text-align:center;color:#ccc;margin-top:20px;margin-bottom:20px;">
+                    <div style="padding:12px 16px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:bold;line-height:1.2;">购物车 ({{ cart.length }})</span>
+                        <el-button link type="danger" @click="clearCart" :disabled="cart.length===0">清空</el-button>
+                    </div>
+                    <div style="flex:1;overflow-y:auto;padding:15px;">
+                        <div v-if="cart.length===0" style="text-align:center;color:#ccc;margin-top:50px;">
                             <el-icon size="40"><shopping-cart /></el-icon><p>空空如也</p>
                         </div>
-                       
                         <div v-for="item in cart" :key="item.id" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
                             <div><div style="font-weight:bold;">{{ item.name }}</div><div style="font-size:12px;color:#999;">¥{{ item.price }}</div></div>
                             <div style="display:flex;align-items:center;gap:5px;">
@@ -496,18 +401,9 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- 2. 购物车Header (清空) -->
-                    <div style="padding:10px 15px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;background:#fcfcfc;">
-                        <span style="font-weight:bold;font-size:14px;">购物车 ({{ cart.length }})</span>
-                        <el-button link type="danger" size="small" @click="clearCart" :disabled="cart.length===0">清空</el-button>
-                    </div>
-                  
-                    <!-- 3. 结算Footer -->
-                    <div style="padding:20px;background:white;">
+                    <div style="padding:20px;border-top:1px solid #eee;">
                         <div style="display:flex;justify-content:space-between;margin-bottom:15px;font-size:20px;font-weight:bold;"><span>合计</span><span>¥{{ cartTotal }}</span></div>
-                        <el-button type="primary" style="width:100%;height:44px;border-radius:22px;font-size:16px;"
-                            :disabled="cart.length===0" @click="submitOrder" :loading="submitting">去结算</el-button>
+                        <el-button type="primary" style="width:100%;height:44px;border-radius:22px;font-size:16px;" :disabled="cart.length===0" @click="submitOrder" :loading="submitting">去结算</el-button>
                     </div>
                 </aside>
             </div>
@@ -519,9 +415,22 @@
         const { createApp, ref, reactive, computed } = Vue;
         const { ElMessage, ElMessageBox } = ElementPlus;
         const { User, Lock, Food, Shop, Plus, ShoppingCart, Search, StarFilled, SwitchButton, Location, ArrowDown, Back, ArrowRight, Tickets, Ticket, Present, ShoppingBag, Burger, Bowl, IceCream, CaretBottom } = ElementPlusIconsVue;
-        
-        // --- 核心配置 ---
-        const USE_MOCK_DATA = false; // 保持使用真实数据库模式
+
+        // --- 配置 ---
+        const USE_MOCK_DATA = false; 
+
+        const MOCK_SHOPS = [
+            { shop_id: 1, shop_name: '菇的辣克 Good Luck', status: 1, delivery_fee: 0, delivery_range: 5.6, type: 3 }, 
+            { shop_id: 2, shop_name: '韩餐 Hodori', status: 1, delivery_fee: 5, delivery_range: 2.3, type: 3 }, 
+            { shop_id: 3, shop_name: '蜜雪冰城', status: 1, delivery_fee: 2, delivery_range: 3.0, type: 1 }, 
+            { shop_id: 4, shop_name: '麦当劳', status: 1, delivery_fee: 0, delivery_range: 4.0, type: 2 }, 
+            { shop_id: 5, shop_name: '便利店', status: 1, delivery_fee: 3, delivery_range: 2.0, type: 4 } 
+        ];
+        const MOCK_ORDERS = [
+            { order_id: 'ORD-123', shop_name: '菇的辣克 Good Luck', status: '已完成', total_price: 56, create_time: '2023-10-01 12:00', dishes: [{name: '招牌辣子鸡', image: null}] },
+            { order_id: 'ORD-124', shop_name: '韩餐 Hodori', status: '配送中', total_price: 36, create_time: '2023-10-02 18:30', dishes: [{name: '石锅拌饭', image: null}] },
+            { order_id: 'ORD-125', shop_name: '必胜客 Pizza', status: '准备中', total_price: 88, create_time: '2023-10-02 19:00', dishes: [{name: '超级至尊披萨', image: null}] }
+        ];
 
         const app = createApp({
             components: { User, Lock, Food, Shop, Plus, ShoppingCart, Search, StarFilled, SwitchButton, Location, ArrowDown, Back, ArrowRight, Tickets, CaretBottom },
@@ -538,16 +447,12 @@
                 const cart = ref([]);
                 const submitting = ref(false);
                 
-                // 【核心修改】：sessionOrders 仅存储"当前会话"提交的订单
-                // 这样可以避免一打开订单列表就显示数据库里已有的测试/默认订单
-                const sessionOrders = ref([]); 
-
                 // 订单相关
                 const showOrderHistory = ref(false);
                 const orders = ref([]);
                 const loadingOrders = ref(false);
                 const shopNameCache = new Map();
-                
+
                 // 筛选与定位
                 const searchKeyword = ref('');
                 const currentCategory = ref('全部');
@@ -556,6 +461,7 @@
                 const locationDialogVisible = ref(false);
                 const currentAddress = ref('233 N Spring St, Los Angeles');
                 const mockAddresses = ref(['233 N Spring St, Los Angeles', 'USC Village', 'Santa Monica Blvd']);
+
                 const categories = [
                     { name: '全部', type_id: 0, icon: 'Food', color: '#ff6b6b' },
                     { name: '甜品奶茶', type_id: 1, icon: 'IceCream', color: '#ff9f43' },
@@ -567,16 +473,11 @@
                 // 登录
                 const handleLogin = () => {
                     loading.value = true;
-                    if (USE_MOCK_DATA) {
-                         // Mock logic...
-                    } else {
-                        // 真实请求
-                        fetch('/user/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(loginForm) })
-                        .then(res => { if(!res.ok) throw new Error(); return res.json(); })
-                        .then(data => { currentUser.value = data; fetchShops(); })
-                        .catch(() => ElMessage.error('登录失败：无法连接到数据库接口'))
-                        .finally(() => loading.value = false);
-                    }
+                    fetch('/user/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(loginForm) })
+                    .then(res => { if(!res.ok) throw new Error(); return res.json(); })
+                    .then(data => { currentUser.value = data; fetchShops(); })
+                    .catch(() => ElMessage.error('登录失败'))
+                    .finally(() => loading.value = false);
                 };
 
                 // 下拉菜单处理
@@ -593,21 +494,31 @@
                         performLogout();
                     }
                 };
+
                 const performLogout = () => {
-                    currentUser.value = null;
-                    cart.value = []; currentShopId.value = null; showOrderHistory.value = false;
-                    // 清空当前会话订单
-                    sessionOrders.value = [];
+                    currentUser.value = null; cart.value = []; currentShopId.value = null; showOrderHistory.value = false;
                 };
 
                 // 商家 & 菜单
                 const fetchShops = () => {
                     loadingShops.value = true;
-                    fetch('/shop/getall', { method: 'POST', headers: {'Content-Type':'application/json'} })
-                    .then(res => { if (!res.ok) throw new Error('接口请求失败'); return res.json(); })
-                    .then(data => { shops.value = Array.isArray(data) ? data : []; })
-                    .catch(()=>ElMessage.error('获取商家失败'))
-                    .finally(()=>loadingShops.value=false);
+                    if (USE_MOCK_DATA) { 
+                        setTimeout(() => { shops.value = MOCK_SHOPS; loadingShops.value = false; }, 300); 
+                    } else {
+                        fetch('/shop/getall', { 
+                            method: 'POST', 
+                            headers: {'Content-Type':'application/json'},
+                        })
+                        .then(res => {
+                            if (!res.ok) throw new Error('接口请求失败');
+                            return res.json();
+                        })
+                        .then(data => {
+                            shops.value = Array.isArray(data) ? data : [];
+                        })
+                        .catch(()=>ElMessage.error('获取商家失败'))
+                        .finally(()=>loadingShops.value=false);
+                    }
                 };
 
                 const fetchMenu = (shopId) => {
@@ -617,14 +528,26 @@
                         headers: {'Content-Type':'application/json'}, 
                         body: JSON.stringify({shop_id: shopId}) 
                     })
-                    .then(res => { if (!res.ok) throw new Error('获取菜单失败'); return res.json(); })
                     .then(res => {
+                        if (!res.ok) throw new Error('获取菜单失败');
+                        return res.json();
+                    })
+                    .then(res => {
+                        console.log('后端返回的菜单原始数据：', res);
                         menuItems.value = (res.data||[]).map(item => {
                             const id = item.dish_id ?? item.dishId ?? item.id ?? item.MenuID ?? `dish_${Date.now()}_${Math.floor(Math.random()*1000)}`;
                             const name = item.dish_name ?? item.dishName ?? item.name ?? `菜品#${id}`;
                             const price = item.price ?? item.Price ?? 0;
-                            return { id, name, price, description: item.description||'', image: item.image||null, shop_id: item.shop_id || shopId };
+                            return { 
+                                id, 
+                                name, 
+                                price, 
+                                description: item.description||'', 
+                                image: item.image||null, 
+                                shop_id: item.shop_id || shopId 
+                            };
                         });
+                        console.log('标准化后的菜单数据：', menuItems.value);
                     })
                     .catch(()=>ElMessage.error('获取菜单失败'))
                     .finally(()=>loadingMenu.value=false);
@@ -640,7 +563,7 @@
                     } else { switchToShop(shop); }
                 };
                 const switchToShop = (shop) => { 
-                    currentShopId.value = shop.shop_id;
+                    currentShopId.value = shop.shop_id; 
                     currentShopName.value = shop.shop_name; 
                     fetchMenu(shop.shop_id); 
                     cart.value = [];
@@ -654,14 +577,22 @@
 
                 // 购物车 & 订单
                 const addToCart = (dish) => {
+                    console.log('准备添加到购物车的菜品：', dish);
                     const exist = cart.value.find(i=>i.shop_id === dish.shop_id && i.id === dish.id);
-                    if(exist) { exist.quantity++; } else { cart.value.push({...dish, quantity:1, shop_id: currentShopId.value}); }
+                    if(exist) {
+                        exist.quantity++;
+                    } else {
+                        cart.value.push({...dish, quantity:1, shop_id: currentShopId.value});
+                    }
+                    console.log('添加后的购物车：', cart.value);
                     ElMessage.success(`已添加 ${dish.name}`);
                 };
                 const increaseQuantity = (i) => i.quantity++;
                 const decreaseQuantity = (i) => { 
-                    i.quantity--;
-                    if(i.quantity<=0) { cart.value = cart.value.filter(x=>x.id !== i.id); }
+                    i.quantity--; 
+                    if(i.quantity<=0) {
+                        cart.value = cart.value.filter(x=>x.id !== i.id);
+                    }
                 };
                 const clearCart = () => {
                      ElMessageBox.confirm('确定清空购物车？', '提示', {confirmButtonText:'确定',cancelButtonText:'取消',type:'warning'})
@@ -674,35 +605,33 @@
                     const shopId = currentShopId.value;
                     const hasCrossShop = cart.value.some(item => item.shop_id !== shopId);
                     if (hasCrossShop) { ElMessage.error('订单包含不同商家的菜品，请清空购物车后重新选择'); return; }
-                    
                     submitting.value = true;
-
-                    // 真实请求逻辑：提交给数据库
+                    console.log('提交订单前购物车：', cart.value);
+                    console.log('当前用户ID：', currentUser.value?.id);
                     const payload = { 
                         user_id: currentUser.value.id, 
                         shop_id: currentShopId.value,
                         dishes: cart.value.map(i=>({ dish_id: i.id, quantity: i.quantity, price: i.price })) 
                     };
                     
-                    fetch('/orders/create', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
-                    .then(res => { if (!res.ok) throw new Error('request failed'); return res.json(); })
+                    console.log('提交订单的payload：', payload); 
+
+                    fetch('/orders/create', { 
+                        method:'POST', 
+                        headers:{'Content-Type':'application/json'}, 
+                        body: JSON.stringify(payload) 
+                    })
+                    .then(res => { 
+                        if (!res.ok) throw new Error('request failed'); 
+                        return res.json(); 
+                    })
                     .then(orderRes => {
                         const orderId = orderRes.order_id;
-                        
-                        // 【核心逻辑】提交成功后，手动将订单加入到"会话订单列表"中
-                        const newOrder = {
-                            order_id: orderId,
-                            user_id: currentUser.value.id,
-                            shop_id: currentShopId.value,
-                            shop_name: currentShopName.value,
-                            status: 2, // 默认显示为"待接单"状态
-                            total_amount: parseFloat(cartTotal.value),
-                            created_at: new Date().toISOString(),
-                            dishes: JSON.parse(JSON.stringify(cart.value))
-                        };
-                        sessionOrders.value.unshift(newOrder);
-
-                        ElMessageBox.confirm(`订单创建成功！\n是否查看订单？`, '成功', { confirmButtonText: '查看订单', cancelButtonText: '继续点餐', type: 'success' })
+                        ElMessageBox.confirm(`订单创建成功！订单ID：${orderId}\n是否查看订单？`, '成功', { 
+                            confirmButtonText: '查看订单', 
+                            cancelButtonText: '继续点餐', 
+                            type: 'success' 
+                        })
                         .then(() => { cart.value=[]; openOrderList(); })
                         .catch(() => { cart.value=[]; currentShopId.value=null; });
                     })
@@ -710,7 +639,7 @@
                     .finally(() => submitting.value = false);
                 };
 
-                // --- 订单列表逻辑 ---
+                // --- 核心修复：订单列表逻辑 ---
                 const openOrderList = () => {
                     showOrderHistory.value = true;
                     currentShopId.value = null; 
@@ -719,82 +648,95 @@
                 const closeOrderList = () => {
                     showOrderHistory.value = false;
                 };
-
                 const fetchOrderList = () => {
                     loadingOrders.value = true;
+                    // 1. 调试：打印请求URL
+                    const requestUrl = `/orders/getallbyid?user_id=${currentUser.value.id}`;
+                    console.log('请求订单列表URL：', requestUrl);
                     
-                    // 【核心修改】只显示 sessionOrders (当前会话订单)
-                    // 不再去 fetch('/orders/getallbyid')，从而屏蔽掉数据库里的旧数据
-                    setTimeout(() => {
-                        processOrders(sessionOrders.value);
-                        loadingOrders.value = false;
-                    }, 300);
-                };
+                    fetch(requestUrl, { method: 'GET' })
+                        .then(res => {
+                            // 2. 调试：打印响应状态
+                            console.log('订单接口响应状态：', res.status, res.ok);
+                            return res.json();
+                        })
+                        .then(data => {
+                            // 3. 调试：打印原始返回数据
+                            console.log('订单接口原始返回数据：', data);
+                            let list = [];
+                            if (typeof data === 'object' && data !== null) {
+                                if (!Array.isArray(data)) { list = [data]; } else { list = data; }
+                            }
+                            console.log('格式化前订单列表：', list);
+                            const statusMap = { 0: '未下单', 1: '待支付', 2: '待接单', 3: '已自我取消', 4: '待配送', 5: '配送中', 6: '已完成', 7: '已被商家取消', 8: '备餐中' };
+                            const formatTime = (timeStr) => { if (!timeStr) return '未知时间'; try { return new Date(timeStr).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch (e) { return timeStr; } };
+                            orders.value = list.map(o => ({
+                                order_id: o.order_id,
+                                user_id: o.user_id,
+                                shop_id: o.shop_id,
+                                total_amount: o.total_amount,
+                                status: o.status,
+                                created_at: o.created_at,
+                                total_price: o.total_amount || 0,
+                                create_time_format: formatTime(o.created_at),
+                                status_text: statusMap[o.status] || '准备中',
+                                shop_name: `商家ID:${o.shop_id}`
+                            }));
+                            console.log('格式化后订单列表：', orders.value);
 
-                // 统一的订单数据处理函数
-                const processOrders = (list) => {
-                    const statusMap = { 0: '未下单', 1: '待支付', 2: '待接单', 3: '已自我取消', 4: '待配送', 5: '配送中', 6: '已完成', 7: '已被商家取消', 8: '备餐中' };
-                    const formatTime = (timeStr) => { if (!timeStr) return '未知时间'; try { return new Date(timeStr).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch (e) { return timeStr; } };
-                    
-                    orders.value = list.map(o => ({
-                        order_id: o.order_id,
-                        user_id: o.user_id,
-                        shop_id: o.shop_id,
-                        total_amount: o.total_amount,
-                        status: o.status,
-                        created_at: o.created_at,
-                        total_price: o.total_amount || 0,
-                        create_time_format: formatTime(o.created_at),
-                        status_text: statusMap[o.status] || '准备中',
-                        // 如果本地有shop_name就用本地的，否则显示ID等待异步获取
-                        shop_name: o.shop_name || `商家ID:${o.shop_id}` 
-                    }));
+                            const ids = [...new Set(list.map(o => o.shop_id).filter(id => id !== undefined && id !== null))];
+                            Promise.all(ids.map(id => {
+                                if (shopNameCache.has(id)) {
+                                    return Promise.resolve({ id, name: shopNameCache.get(id) });
+                                }
+                                return fetch('/shop/getshopnamebyshopid', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ ShopID: id })
+                                })
+                                .then(res => res.json())
+                                .then(d => { const name = d.shop_name || `商家ID:${id}`; shopNameCache.set(id, name); return { id, name }; })
+                                .catch(() => ({ id, name: `商家ID:${id}` }));
+                            })).then(results => {
+                                const nameMap = new Map(results.map(r => [r.id, r.name]));
+                                orders.value = orders.value.map(o => ({ ...o, shop_name: nameMap.get(o.shop_id) || `商家ID:${o.shop_id}` }));
+                            });
+                        })
+                        .catch(err => {
+                            console.error('获取订单列表失败：', err);
+                            ElMessage.error('获取订单列表失败');
+                        })
+                        .finally(() => loadingOrders.value = false);
                 };
                 
-                // 【核心修改】：取消订单逻辑优化（强制成功）
+                // 取消订单逻辑
                 const cancelOrder = (order) => {
                     ElMessageBox.confirm('确定要取消此订单吗？', '取消订单', {
                         confirmButtonText: '确定取消',
-                        cancelButtonText: '我再想想',
+                        cancelButtonText: '点错了',
                         type: 'warning'
                     }).then(() => {
-                        // 1. 无论后端成功与否，前端先更新状态
-                        order.status_text = '已取消';
-                        // 同步更新 sessionOrders 中的状态，确保下次刷新列表也是取消状态
-                        const so = sessionOrders.value.find(s => s.order_id === order.order_id);
-                        if (so) {
-                             so.status = 3; 
-                             so.status_text = '已取消'; // 确保文字也同步
-                        }
-                        
-                        ElMessage.success('订单已取消');
-
-                        // 2. 尝试发送真实请求 (静默处理错误，不干扰用户)
+                        const orderId = order.order_id; 
                         fetch('/api/orders/cancel', {
                             method: 'POST',
                             headers: {'Content-Type':'application/json'},
-                            body: JSON.stringify({ order_id: order.order_id })
-                        }).catch(e => console.log('Backend cancel failed but UI updated', e));
-                        
+                            body: JSON.stringify({ order_id: orderId })
+                        })
+                        .then(res => {
+                            if (res.ok) {
+                                order.status_text = '已取消'; 
+                                ElMessage.success('订单已取消');
+                            } else {
+                                ElMessage.error('取消失败，请联系商家');
+                            }
+                        })
+                        .catch(() => ElMessage.error('网络错误'));
                     }).catch(() => {});
-                };
-
-                // 【核心新增】：再来一单逻辑
-                const orderAgain = (order) => {
-                    // 跳转到该商家
-                    const targetShop = {
-                        shop_id: order.shop_id,
-                        shop_name: order.shop_name
-                    };
-                    // 关闭订单列表，回到主界面
-                    showOrderHistory.value = false;
-                    // 进入店铺
-                    switchToShop(targetShop);
                 };
 
                 // 筛选逻辑
                 const handleCategoryClick = (n, typeId) => { 
-                    currentCategory.value = n;
+                    currentCategory.value = n; 
                     currentType.value = typeId; 
                 };
                 const handleSort = (t) => currentSort.value=t;
@@ -806,6 +748,7 @@
                     if(currentSort.value==='price') res.sort((a,b)=>(a.delivery_fee||0)-(b.delivery_fee||0));
                     return res;
                 });
+                
                 // 地址逻辑
                 const selectAddress = (addr) => { currentAddress.value=addr; locationDialogVisible.value=false; ElMessage.success('已切换地址'); };
                 const addNewAddress = () => {
@@ -819,7 +762,6 @@
                     categories, searchKeyword, currentCategory, handleCategoryClick, currentSort, handleSort,
                     locationDialogVisible, currentAddress, mockAddresses, selectAddress, addNewAddress,
                     showOrderHistory, orders, loadingOrders, openOrderList, closeOrderList, cancelOrder,
-                    orderAgain, // 新增方法
                     User, Lock,
                     JSON // 暴露JSON用于模板调试
                 };

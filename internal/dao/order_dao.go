@@ -18,12 +18,12 @@ func CreateOrder(db *gorm.DB, e *model.OrderEntity) error {
 	return nil
 }
 
-func GetOrderByUserID(db *gorm.DB, userID int) (*model.OrderEntity, error) {
-	var e model.OrderEntity
-	if err := db.First(&e, "user_id = ?", userID).Error; err != nil {
+func GetOrdersByUserID(db *gorm.DB, userID int) ([]model.OrderEntity, error) {
+	var e []model.OrderEntity
+	if err := db.Where("user_id = ?", userID).Find(&e).Error; err != nil {
 		return nil, err
 	}
-	return &e, nil
+	return e, nil
 }
 
 func UpdateOrderStatus(db *gorm.DB, id int, status string) error {

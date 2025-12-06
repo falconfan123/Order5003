@@ -72,9 +72,8 @@ func (h *ShopHandler) GetShopNameByShopID(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"shop_name": shop})
 }
-func (h *ShopHandler) GetOrdersByShopID(c *gin.Context) {
-	logger.Info("【后端】GetOrdersByShopID - 完整请求URL:", c.Request.URL.String())
 
+func (h *ShopHandler) GetOrdersByShopID(c *gin.Context) {
 	if c.Request.Method != http.MethodGet {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
 		return
@@ -85,11 +84,13 @@ func (h *ShopHandler) GetOrdersByShopID(c *gin.Context) {
 	}
 	logger.Info("shopIdstr", shopIdstr)
 	ShopID, err := strconv.Atoi(shopIdstr)
+	logger.Info("ShopID", ShopID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid shop_id"})
 		return
 	}
 	orders, err := h.svc.GetOrdersByShopID(ShopID)
+	logger.Info("orders", orders)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
