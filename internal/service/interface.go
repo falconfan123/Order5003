@@ -4,6 +4,7 @@ import (
 	"Order5003/internal/bizmodel"
 	"context"
 
+	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
 
@@ -30,6 +31,10 @@ type ShopService interface {
 	GetAllShops() ([]bizmodel.Shop, error)
 	GetMenuDishesByShopID(shopID int) ([]bizmodel.Dishes, error)
 	GetShopNameByShopID(shopID int) (string, error)
+	GetDeliveryFeeByShopID(shopID int) (decimal.Decimal, error)
+	GetBusinessHoursByShopID(shopID int) (string, error)
+	GetShopTypeByShopID(shopID int) (int, error)
+	UpdateShopStatus(shopID int, status int) (int, error)
 }
 
 type UserService interface {

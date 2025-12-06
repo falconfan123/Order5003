@@ -38,3 +38,7 @@ func ListOrdersByShopID(db *gorm.DB, shopID int) ([]model.OrderEntity, error) {
 	}
 	return list, nil
 }
+
+func UpdateShopStatus(db *gorm.DB, e *model.ShopEntity, status int) error {
+	return db.Model(&model.ShopEntity{}).Where("shop_id = ?", e.ShopID).Update("status", status).Error
+}

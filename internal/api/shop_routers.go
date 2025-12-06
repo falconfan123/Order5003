@@ -2,24 +2,19 @@ package api
 
 import (
 	"Order5003/internal/handlers"
-	"Order5003/internal/logger"
 
 	"github.com/gin-gonic/gin"
 )
 
 func RegisterShopRoutes(r *gin.Engine, h *handlers.ShopHandler) {
 	g := r.Group("/shop")
-	logger.Info("开始注册商家端路由，分组路径：/shop") // 加日志
-	g.GET("", func(c *gin.Context) {
-		logger.Info("访问/shop根路径，返回shop.html")
-		c.File("web/templates/shop.html")
-	})
+	g.GET("", func(c *gin.Context) { c.File("web/templates/shop.html") })
 	g.POST("/login", func(c *gin.Context) { h.Login(c) })
 	g.POST("/getall", func(c *gin.Context) { h.GetAll(c) })
-	g.POST("/getshopnamebyshopid", func(c *gin.Context) {
-		logger.Info("接收到/getshopnamebyshopid请求，开始处理")
-		h.GetShopNameByShopID(c)
-	})
-
+	g.POST("/getshopnamebyshopid", func(c *gin.Context) { h.GetShopNameByShopID(c) })
+	g.POST("/getdeliveryfeebyshopid", func(c *gin.Context) { h.GetDeliveryFeeByShopID(c) })
 	g.GET("/getordersbyshopid", func(c *gin.Context) { h.GetOrdersByShopID(c) })
+	g.POST("/getbussinesshoursbyshopid", func(c *gin.Context) { h.GetBusinessHoursByShopID(c) })
+	g.POST("/getshoptypebyshopid", func(c *gin.Context) { h.GetShopTypeByShopID(c) })
+	g.POST("/updateshopstatus", func(c *gin.Context) { h.UpdateShopStatus(c) })
 }

@@ -6,6 +6,7 @@ import (
 	"Order5003/internal/logger"
 	"errors"
 
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -75,4 +76,43 @@ func (s *GormStore) GetOrdersByShopID(shopID int) ([]bizmodel.Order, error) {
 		})
 	}
 	return out, nil
+}
+
+// GetDeliveryFeeByShopID 获取指定店铺的配送费
+func (s *GormStore) GetDeliveryFeeByShopID(shopID int) (decimal.Decimal, error) {
+	e, err := dao.GetShopByID(s.db, shopID)
+	if err != nil {
+		return decimal.Decimal{}, errors.New("shop not found")
+	}
+	return e.DeliveryFee, nil
+}
+
+// GetBusinessHoursByShopID 获取指定店铺的营业时间
+func (s *GormStore) GetBusinessHoursByShopID(shopID int) (string, error) {
+	e, err := dao.GetShopByID(s.db, shopID)
+	if err != nil {
+		return "", errors.New("shop not found")
+	}
+	return e.BusinessHours, nil
+}
+
+// GetShopTypeByShopID 获取指定店铺的类型
+func (s *GormStore) GetShopTypeByShopID(shopID int) (int, error) {
+	e, err := dao.GetShopByID(s.db, shopID)
+	if err != nil {
+		return 0, errors.New("shop not found")
+	}
+	return int(e.Status), nil
+}
+
+// UpdateShopStatus 更新指定店铺的状态
+func (s *GormStore) UpdateShopStatus(shopID int, status int) (int, error) {
+	e, err := dao.GetShopByID(s.db, shopID)
+	if err != nil {
+		return 0, errors.New("shop not found")
+	}
+	if err := dao.UpdateShopStatus(s.db, e, status); err != nil {
+		return 0, errors.New("update shop failed")
+	}
+	return int(e.Status), nil
 }
