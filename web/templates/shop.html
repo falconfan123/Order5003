@@ -1099,63 +1099,94 @@
         ElementPlus.ElMessage.success('已刷新订单');
       },
       addMockDish() {
-        const maxId = this.dishes.reduce((m, d) => Math.max(m, d.dish_id), 0) + 1;
-        this.dishes.push({
-          dish_id: maxId,
-          shop_id: this.currentShop.shop_id,
-          dish_name: '新菜品 #' + maxId,
-          price: 19.9,
-          stock: 50,
-          status: 1
+        this.canModifyMenu().then(ok => {
+          if (!ok) return;
+          const maxId = this.dishes.reduce((m, d) => Math.max(m, d.dish_id), 0) + 1;
+          this.dishes.push({
+            dish_id: maxId,
+            shop_id: this.currentShop.shop_id,
+            dish_name: '新菜品 #' + maxId,
+            price: 19.9,
+            stock: 50,
+            status: 1
+          });
+          ElementPlus.ElMessage.success('已添加一条示例菜品（仅前端）');
         });
-        ElementPlus.ElMessage.success('已添加一条示例菜品（仅前端）');
       },
       toggleDishStatus(d) {
-        d.status = d.status === 1 ? 0 : 1;
-        ElementPlus.ElMessage.success(d.status === 1 ? '菜品已上架（Mock）' : '菜品已停售（Mock）');
+        this.canModifyMenu().then(ok => {
+          if (!ok) return;
+          d.status = d.status === 1 ? 0 : 1;
+          ElementPlus.ElMessage.success(d.status === 1 ? '菜品已上架（Mock）' : '菜品已停售（Mock）');
+        });
       },
       // ===== 替换：编辑菜品，弹出弹窗 =====
       editDish(d) {
-        // 浅拷贝到表单，避免直接改原对象
-        this.editForm = {
-          dish_id: d.dish_id,
-          shop_id: d.shop_id,
-          dish_name: d.dish_name,
-          price: d.price,
-          stock: d.stock,
-          status: d.status
-        };
-        this.editDialogVisible = true;
+        this.canModifyMenu().then(ok => {
+          if (!ok) return;
+          this.editForm = {
+            dish_id: d.dish_id,
+            shop_id: d.shop_id,
+            dish_name: d.dish_name,
+            price: d.price,
+            stock: d.stock,
+            status: d.status
+          };
+          this.editDialogVisible = true;
+        });
       },
       // ===== 新增：保存编辑结果 =====
       saveDishEdit() {
-        if (!this.editForm.dish_name.trim()) {
-          ElementPlus.ElMessage.warning('菜名不能为空');
-          return;
-        }
-        if (this.editForm.price < 0) {
-          ElementPlus.ElMessage.warning('价格不能为负');
-          return;
-        }
-        if (this.editForm.stock < 0) {
-          ElementPlus.ElMessage.warning('库存不能为负');
-          return;
-        }
+        this.canModifyMenu().then(ok => {
+          if (!ok) return;
+          if (!this.editForm.dish_name.trim()) {
+            ElementPlus.ElMessage.warning('菜名不能为空');
+            return;
+          }
+          if (this.editForm.price < 0) {
+            ElementPlus.ElMessage.warning('价格不能为负');
+            return;
+          }
+          if (this.editForm.stock < 0) {
+            ElementPlus.ElMessage.warning('库存不能为负');
+            return;
+          }
 
-        const idx = this.dishes.findIndex(d => d.dish_id === this.editForm.dish_id);
-        if (idx === -1) {
-          ElementPlus.ElMessage.error('未找到对应菜品，保存失败');
-          return;
+          const idx = this.dishes.findIndex(d => d.dish_id === this.editForm.dish_id);
+          if (idx === -1) {
+            ElementPlus.ElMessage.error('未找到对应菜品，保存失败');
+            return;
+          }
+
+          this.dishes[idx].dish_name = this.editForm.dish_name.trim();
+          this.dishes[idx].price = Number(this.editForm.price);
+          this.dishes[idx].stock = Number(this.editForm.stock);
+          this.dishes[idx].status = this.editForm.status;
+
+          this.editDialogVisible = false;
+          ElementPlus.ElMessage.success('菜品信息已更新（仅前端 Mock）');
+        });
+      },
+      async canModifyMenu() {
+        if (!this.currentShop) return false;
+        const st = typeof this.currentShop.status === 'number' ? this.currentShop.status : (this.shopOpen ? 1 : 0);
+        if (st === 0) return true;
+        try {
+          const res = await fetch(`/shop/getordersbyshopid?shop_id=${encodeURIComponent(this.currentShop.shop_id)}`);
+          const list = res.ok ? await res.json() : [];
+          const arr = Array.isArray(list) ? list : [];
+          const hasRunning = arr.some(o => {
+            const s = o.status ?? o.Status;
+            return s === 0 || s === 1 || s === 2 || s === 8;
+          });
+          if (hasRunning) {
+            ElementPlus.ElMessageBox.alert('当前用订单进行中 无法修改菜单 请等待打烊后更改', '提示', { type: 'warning' });
+            return false;
+          }
+          return true;
+        } catch (e) {
+          return false;
         }
-
-        // 更新原数组中的数据
-        this.dishes[idx].dish_name = this.editForm.dish_name.trim();
-        this.dishes[idx].price = Number(this.editForm.price);
-        this.dishes[idx].stock = Number(this.editForm.stock);
-        this.dishes[idx].status = this.editForm.status;
-
-        this.editDialogVisible = false;
-        ElementPlus.ElMessage.success('菜品信息已更新（仅前端 Mock）');
       }
     }
   };
