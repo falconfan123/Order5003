@@ -1,310 +1,997 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>点餐系统 - 商家端</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .container { display: flex; flex-wrap: wrap; gap: 20px; }
-        .sidebar { flex: 1; min-width: 200px; border: 1px solid #ddd; padding: 20px; border-radius: 5px; }
-        .content { flex: 3; min-width: 300px; }
-        .tab { padding: 10px 20px; margin-bottom: 10px; cursor: pointer; border: 1px solid #ddd; border-radius: 3px; background-color: #f0f0f0; }
-        .tab.active { background-color: #2196F3; color: white; }
-        .tab-content { display: none; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
-        .tab-content.active { display: block; }
-        .order-item { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
-        .order-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .order-details { margin-left: 20px; }
-        .status-select { padding: 5px; }
-        .menu-item { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
-        .action-buttons { display: flex; gap: 10px; }
-        .edit-btn { background-color: #FFC107; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px; }
-        .delete-btn { background-color: #f44336; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px; }
-        .add-menu-item { background-color: #4CAF50; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 3px; margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; box-sizing: border-box; }
-        .submit-btn { background-color: #2196F3; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 3px; }
-        .login-form { max-width: 400px; margin: 100px auto; padding: 30px; border: 1px solid #ddd; border-radius: 5px; }
-        #logout-btn { margin-top: 20px; padding: 10px; width: 100%; background-color: #f44336; color: white; border: none; cursor: pointer; border-radius: 3px; }
-        /* 新增店铺ID显示样式 */
-        #shop-id-display {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            padding: 8px 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #f8f9fa;
-            font-size: 14px;
-            color: #333;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>饭团外卖 - 商家工作台</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <!-- Element Plus -->
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css" />
+  <script src="https://unpkg.com/element-plus/dist/index.full.js"></script>
+  <script src="https://unpkg.com/@element-plus/icons-vue"></script>
+  <!-- 字体 -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary-color: #00cbd3;
+      --primary-dark: #00b5bc;
+      --bg-color: #f7f8fa;
+      --text-main: #333333;
+      --text-sub: #999999;
+      --border-color: #eeeeee;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Noto Sans SC', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+    }
+
+    #app {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 登录遮罩 */
+    .login-mask {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .login-card {
+      background: #fff;
+      padding: 32px 28px 26px;
+      border-radius: 20px;
+      width: 360px;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+
+    .brand-text {
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    /* 顶部栏 */
+    .shop-header {
+      height: 64px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      z-index: 10;
+    }
+
+    .shop-header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .shop-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+
+    .shop-info-main {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .shop-name {
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .shop-sub {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .shop-header-right {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 13px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    /* 主布局 */
+    .layout-main {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+    }
+
+    .side-nav {
+      width: 220px;
+      background: #fff;
+      border-right: 1px solid var(--border-color);
+      padding-top: 12px;
+    }
+
+    .side-title {
+      padding: 10px 20px;
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .side-item {
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .side-item:hover {
+      background-color: #f5f5f5;
+    }
+
+    .side-item.active {
+      background: #e0fbf9;
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+
+    .content {
+      flex: 1;
+      padding: 20px 28px;
+      overflow-y: auto;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .order-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 16px;
+    }
+
+    .order-card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 14px 14px 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      border: 1px solid #f1f1f1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 13px;
+    }
+
+    .order-header-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .order-id {
+      font-weight: 700;
+    }
+
+    .order-status-tag {
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+    }
+
+    .status-warn {
+      background: #fff7e6;
+      color: #fa8c16;
+    }
+
+    .status-info {
+      background: #e6f7ff;
+      color: #1890ff;
+    }
+
+    .status-success {
+      background: #f6ffed;
+      color: #52c41a;
+    }
+
+    .status-error {
+      background: #fff1f0;
+      color: #f5222d;
+    }
+
+    .order-line {
+      color: #555;
+    }
+
+    .order-footer {
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-sub);
+      font-size: 12px;
+    }
+
+    .dish-list {
+      margin-top: 4px;
+      padding-left: 14px;
+      color: #666;
+    }
+
+    .dish-item {
+      list-style: disc;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .menu-card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 12px 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      border: 1px solid #f1f1f1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 13px;
+    }
+
+    .menu-header-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .menu-name {
+      font-weight: 700;
+    }
+
+    .menu-price {
+      color: #ff4d4f;
+      font-weight: 700;
+    }
+
+    .stat-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-top: 6px;
+    }
+
+    .stat-card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 12px 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      border: 1px solid #f1f1f1;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    /* 编辑弹窗的小提示样式可选 */
+    .dialog-tip {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+  </style>
 </head>
 <body>
-    <div id="login-container" class="login-form">
-        <h2>商家登录</h2>
-        <div class="form-group">
-            <label for="username">用户名</label>
-            <input type="text" id="username" placeholder="请输入用户名" value="admin">
+<div id="app">
+  <!-- 登录 -->
+  <div v-if="!currentShop" class="login-mask">
+    <div class="login-card">
+      <div class="brand-logo">
+        <div class="brand-icon">
+          <el-icon><Food /></el-icon>
         </div>
-        <div class="form-group">
-            <label for="password">密码</label>
-            <input type="password" id="password" placeholder="请输入密码" value="admin">
-        </div>
-        <button class="submit-btn" onclick="login()">登录</button>
+        <div class="brand-text">饭团商家端</div>
+      </div>
+      <p style="font-size:13px;color:#666;margin-bottom:16px;">
+        请输入 <b>商家账号</b> 和 <b>密码</b> 登录（当前为本地 Mock 数据，示例：admin / admin）
+      </p>
+      <el-form :model="loginForm" @submit.prevent>
+        <el-form-item>
+          <el-input v-model="loginForm.username" placeholder="商家用户名">
+            <template #prefix>
+              <el-icon><User /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-input
+            v-model="loginForm.password"
+            type="password"
+            placeholder="密码"
+            show-password
+          >
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+        <el-button
+          type="primary"
+          style="width:100%;border-radius:20px;margin-top:4px;"
+          @click="handleLogin"
+        >
+          登录 / 进入 Mock 商家工作台
+        </el-button>
+      </el-form>
     </div>
+  </div>
 
-    <!-- 修改：给容器加relative定位，用于shopid绝对定位 -->
-    <div id="app-container" style="display: none; position: relative;">
-        <h1>点餐系统 - 商家管理后台</h1>
-        <!-- 新增：店铺ID显示框 -->
-        <div id="shop-id-display"></div>
-        <div class="container">
-            <div class="sidebar">
-                <div class="tab active" onclick="switchTab('orders')">订单管理</div>
-                <div class="tab" onclick="switchTab('menu')">菜单管理</div>
-                <div class="tab" onclick="switchTab('revenue')">营收统计</div>
-                <button id="logout-btn" onclick="logout()">退出登录</button>
+  <!-- 主界面 -->
+  <template v-else>
+    <!-- 顶部栏 -->
+    <header class="shop-header">
+      <div class="shop-header-left">
+        <div class="shop-logo">
+          <el-icon><Shop /></el-icon>
+        </div>
+        <div class="shop-info-main">
+          <div class="shop-name">{{ currentShop.shop_name }}</div>
+          <div class="shop-sub">
+            店铺ID：{{ currentShop.shop_id }} · 配送费 ¥{{ currentShop.delivery_fee.toFixed(2) }}
+            · 经营时间 {{ currentShop.business_hours }}
+          </div>
+        </div>
+      </div>
+      <div class="shop-header-right">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div
+            class="status-dot"
+            :style="{background: shopOpen ? '#52c41a' : '#ff4d4f'}"
+          ></div>
+          <span>{{ shopOpen ? '营业中' : '打烊' }}</span>
+          <el-switch v-model="shopOpen" @change="toggleShopOpen" />
+        </div>
+
+        <el-dropdown @command="handleUserCommand">
+          <span style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <el-avatar :size="30" style="background:#e0fbf9;color:var(--primary-color);">
+              {{ currentShop.manager_name[0] }}
+            </el-avatar>
+            <span style="font-size:13px;">{{ currentShop.manager_name }}</span>
+            <el-icon><CaretBottom /></el-icon>
+          </span>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="profile">店铺资料（Mock）</el-dropdown-item>
+              <el-dropdown-item divided command="logout" style="color:#f56c6c;">
+                <el-icon><SwitchButton /></el-icon>退出登录
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+      </div>
+    </header>
+
+    <!-- 主布局 -->
+    <div class="layout-main">
+      <!-- 左侧导航 -->
+      <aside class="side-nav">
+        <div class="side-title">工作台</div>
+        <div
+          class="side-item"
+          :class="{active: activeMenu === 'orders'}"
+          @click="activeMenu = 'orders'"
+        >
+          <el-icon><List /></el-icon><span>当前订单</span>
+        </div>
+        <div
+          class="side-item"
+          :class="{active: activeMenu === 'menu'}"
+          @click="activeMenu = 'menu'"
+        >
+          <el-icon><Dish /></el-icon><span>菜单管理</span>
+        </div>
+        <div
+          class="side-item"
+          :class="{active: activeMenu === 'stats'}"
+          @click="activeMenu = 'stats'"
+        >
+          <el-icon><DataAnalysis /></el-icon><span>营收概览</span>
+        </div>
+      </aside>
+
+      <!-- 内容 -->
+      <main class="content">
+        <!-- 订单管理 -->
+        <section v-if="activeMenu === 'orders'">
+          <div class="section-header">
+            <div class="section-title">当前订单</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <el-select v-model="orderStatusFilter" size="small" style="width:150px;">
+                <el-option label="全部状态" value="all"></el-option>
+                <el-option label="待支付" value="1"></el-option>
+                <el-option label="待接单" value="2"></el-option>
+                <el-option label="待配送" value="4"></el-option>
+                <el-option label="配送中" value="5"></el-option>
+                <el-option label="已完成" value="6"></el-option>
+                <el-option label="已取消（用户/商家）" value="cancel"></el-option>
+              </el-select>
+              <el-button size="small" @click="refreshOrders">
+                <el-icon><Refresh /></el-icon>刷新（Mock）
+              </el-button>
             </div>
-            <div class="content">
-                <div id="orders-tab" class="tab-content active">
-                    <h2>订单管理</h2>
-                    <div id="orders-container"></div>
-                </div>
-                <div id="menu-tab" class="tab-content">
-                    <h2>菜单管理</h2>
-                    <button class="add-menu-item" onclick="showAddMenuItemForm()">添加菜品</button>
-                    <div id="menu-container"></div>
-                </div>
-                <div id="revenue-tab" class="tab-content">
-                    <h2>营收统计</h2>
-                    <div id="revenue-container">
-                        <p>本系统暂未实现详细的营收统计功能。</p>
-                        <p>基本数据可以在订单管理页面查看。</p>
-                    </div>
-                </div>
+          </div>
+
+          <div v-if="displayOrders.length === 0" style="text-align:center;color:#999;padding:40px 0;">
+            <el-icon size="40"><DocumentRemove /></el-icon>
+            <p>当前暂无订单</p>
+          </div>
+
+          <div class="order-grid" v-else>
+            <div
+              v-for="o in displayOrders"
+              :key="o.order_id"
+              class="order-card"
+            >
+              <div class="order-header-line">
+                <div class="order-id">订单 #{{ o.order_id }}</div>
+                <span class="order-status-tag" :class="statusClass(o.status)">
+                  {{ statusText(o.status) }}
+                </span>
+              </div>
+              <div class="order-line">
+                用户：{{ o.user_name }}（ID: {{ o.user_id }}）
+              </div>
+              <div class="order-line">
+                地址：{{ o.address }}
+              </div>
+              <div class="order-line" v-if="o.deliverer_name">
+                骑手：{{ o.deliverer_name }}（{{ o.deliverer_phone }}）
+              </div>
+              <ul class="dish-list">
+                <li
+                  v-for="d in o.items"
+                  :key="d.id"
+                  class="dish-item"
+                >
+                  {{ d.dish_name }} x{{ d.quantity }} （¥{{ d.subtotal.toFixed(2) }}）
+                </li>
+              </ul>
+              <div class="order-footer">
+                <span>下单时间：{{ o.created_at }}</span>
+                <span>总价：¥{{ o.total_amount.toFixed(2) }}</span>
+              </div>
+
+              <div style="margin-top:6px;display:flex;justify-content:flex-end;gap:6px;">
+                <template v-if="o.status === 2">
+                  <el-button size="small" type="primary" @click="setStatus(o, 8)">接单（备餐中）</el-button>
+                  <el-button size="small" type="danger" plain @click="setStatus(o, 7)">拒单</el-button>
+                </template>
+                <template v-else-if="o.status === 8">
+                  <el-button size="small" type="success" @click="setStatus(o, 4)">备餐完成，待配送</el-button>
+                </template>
+                <template v-else-if="o.status === 4">
+                  <el-button size="small" type="primary" @click="setStatus(o, 5)">骑手已取餐</el-button>
+                </template>
+                <template v-else-if="o.status === 5">
+                  <el-button size="small" type="success" @click="setStatus(o, 6)">确认送达</el-button>
+                </template>
+              </div>
             </div>
-        </div>
+          </div>
+        </section>
+
+        <!-- 菜单管理 -->
+        <section v-if="activeMenu === 'menu'">
+          <div class="section-header">
+            <div class="section-title">菜单管理</div>
+            <el-button type="primary" size="small" @click="addMockDish">
+              <el-icon><Plus /></el-icon>新增菜品（Mock）
+            </el-button>
+          </div>
+
+          <div class="menu-grid">
+            <div
+              v-for="d in menuForShop"
+              :key="d.dish_id"
+              class="menu-card"
+            >
+              <div class="menu-header-line">
+                <div class="menu-name">{{ d.dish_name }}</div>
+                <div class="menu-price">¥{{ d.price.toFixed(2) }}</div>
+              </div>
+              <div style="font-size:12px;color:#777;">
+                库存：{{ d.stock }} · 菜品ID：{{ d.dish_id }}
+              </div>
+              <div style="margin-top:4px;display:flex;justify-content:space-between;align-items:center;">
+                <el-tag size="small" :type="d.status === 1 ? 'success' : 'info'">
+                  {{ d.status === 1 ? '在售' : '停售' }}
+                </el-tag>
+                <div style="display:flex;gap:6px;">
+                  <el-button size="small" text @click="toggleDishStatus(d)">
+                    {{ d.status === 1 ? '停售' : '上架' }}
+                  </el-button>
+                  <el-button size="small" text type="primary" @click="editDish(d)">编辑</el-button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 营收概览 -->
+        <section v-if="activeMenu === 'stats'">
+          <div class="section-header">
+            <div class="section-title">营收概览（Mock）</div>
+          </div>
+          <div class="stat-cards">
+            <div class="stat-card">
+              <div class="stat-label">今日订单数</div>
+              <div class="stat-value">{{ todayOrderCount }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">今日营业额</div>
+              <div class="stat-value">¥{{ todayRevenue.toFixed(2) }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">待处理订单</div>
+              <div class="stat-value">{{ pendingCount }}</div>
+            </div>
+          </div>
+          <p style="font-size:12px;color:#999;margin-top:10px;">
+            当前数据全部来自前端 Mock；后续可以改成从 <code>/shop/getordersbyshopid</code>、
+            <code>/shop/getdishes</code> 等接口计算。
+          </p>
+        </section>
+      </main>
     </div>
 
-    <div id="menu-item-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
-        <div style="background-color: white; padding: 30px; border-radius: 5px; max-width: 500px; width: 100%;">
-            <h2 id="modal-title">添加菜品</h2>
-            <form id="menu-item-form">
-                <input type="hidden" id="menu-item-id">
-                <div class="form-group">
-                    <label for="menu-item-name">菜品名称</label>
-                    <input type="text" id="menu-item-name" required>
-                </div>
-                <div class="form-group">
-                    <label for="menu-item-description">菜品描述</label>
-                    <textarea id="menu-item-description" rows="3"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="menu-item-price">价格</label>
-                    <input type="number" id="menu-item-price" step="0.01" min="0" required>
-                </div>
-                <div class="form-group">
-                    <label for="menu-item-category">分类</label>
-                    <input type="text" id="menu-item-category" required>
-                </div>
-                <div class="form-group">
-                    <label for="menu-item-available">是否可售</label>
-                    <select id="menu-item-available">
-                        <option value="true">是</option>
-                        <option value="false">否</option>
-                    </select>
-                </div>
-                <button type="submit" class="submit-btn">保存</button>
-                <button type="button" onclick="closeMenuItemModal()">取消</button>
-            </form>
-        </div>
-    </div>
+    <!-- 菜品编辑弹窗（仅前端修改 MOCK 数据） -->
+    <el-dialog
+      v-model="editDialogVisible"
+      title="编辑菜品"
+      width="420px"
+    >
+      <el-form :model="editForm" label-width="80px">
+        <el-form-item label="菜品ID">
+          <span>{{ editForm.dish_id }}</span>
+        </el-form-item>
+        <el-form-item label="菜名">
+          <el-input
+            v-model="editForm.dish_name"
+            placeholder="请输入菜品名称"
+          ></el-input>
+        </el-form-item>
+        <el-form-item label="价格">
+          <el-input-number
+            v-model="editForm.price"
+            :min="0"
+            :step="0.5"
+            :precision="2"
+            style="width: 180px;"
+          ></el-input-number>
+          <span style="margin-left:8px;">元</span>
+        </el-form-item>
+        <el-form-item label="库存">
+          <el-input-number
+            v-model="editForm.stock"
+            :min="0"
+            :step="1"
+            style="width: 180px;"
+          ></el-input-number>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-radio-group v-model="editForm.status">
+            <el-radio :label="1">在售</el-radio>
+            <el-radio :label="0">停售</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <div class="dialog-tip">
+        说明：这里的修改 <b>只作用于当前页面的 Mock 数据</b>，刷新页面后会恢复初始值。
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="editDialogVisible = false">取 消</el-button>
+          <el-button type="primary" @click="saveDishEdit">保 存</el-button>
+        </span>
+      </template>
+    </el-dialog>
+  </template>
+</div>
 
-    <script>
-        let currentUser = null;
-        let currentShopId = null; // 新增：全局保存店铺ID
-        let refreshInterval = null;
+<script>
+  // 是否启用 Mock 数据（你以后要连真实后端，就把这个改成 false）
+  const USE_MOCK = true;
 
-        function login() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            fetch('/shop/login', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({username, password}) 
-            })
-            .then(response => { 
-                if (!response.ok) throw new Error('登录失败'); 
-                return response.json(); 
-            })
-            .then(data => {            
-                console.log('后端登录接口返回数据：', data);
+  // ===== Mock 数据：结构按你数据库截图来的 =====
 
-                currentUser = data;
-                // 核心修改1：保存店铺ID（假设后端返回的data包含shopid字段）
-                 currentShopId = data.shopid || data.shopId || data.shop_id;
+  const MOCK_SHOPS = [
+    {
+      shop_id: 1,
+      shop_name: 'admin',
+      delivery_range: 8.0,
+      delivery_fee: 0.0,
+      business_hours: '00:00-24:00',
+      status: 1,
+      created_at: '2025-12-02 21:41:07',
+      password: 'admin',
+      type: 0,
+      manager_name: 'Admin商家'
+    },
+    {
+      shop_id: 2,
+      shop_name: '鲜味小馆',
+      delivery_range: 5.0,
+      delivery_fee: 2.0,
+      business_hours: '10:00-21:30',
+      status: 1,
+      created_at: '2025-11-17 21:41:07',
+      password: 'xianwei123',
+      type: 3,
+      manager_name: '鲜味老板'
+    }
+  ];
 
-                // 核心修复2：校验店铺ID是否存在，给出明确提示
-                if (!currentShopId) {
-                    alert('登录成功，但未获取到店铺ID！请联系管理员绑定店铺');
-                    return;
-                }
-                   
-                // 渲染店铺ID到右上角
-                document.getElementById('shop-id-display').textContent = `当前店铺ID: ${currentShopId}`;
-                
-                document.getElementById('login-container').style.display = 'none';
-                document.getElementById('app-container').style.display = 'block';
-                loadOrders();
-                loadMenu();
-                startRefreshInterval();
-            })
-            .catch(error => { 
-                alert('用户名或密码错误'); 
-                console.error('登录失败:', error); 
-            });
+  const MOCK_USERS = [
+    { user_id: 1, phone: '914123', user_name: 'admin', main_address: 'Hong Kong', created_at: '2025-12-02 23:26:21', password: 'admin' },
+    { user_id: 7, phone: '31341', user_name: 'user1', main_address: 'Beijing Chaoyang', created_at: '2025-12-03 10:15:30', password: 'user123456' },
+    { user_id: 8, phone: '123435', user_name: 'lisa', main_address: 'Shanghai Pudong', created_at: '2025-12-03 11:20:45', password: 'lisa666' },
+    { user_id: 9, phone: '51324124', user_name: 'mike', main_address: 'Guangzhou Tianhe', created_at: '2025-12-03 14:05:12', password: 'mike888' },
+    { user_id: 10, phone: '132412345', user_name: 'alice', main_address: 'Shenzhen Nanshan', created_at: '2025-12-03 16:30:00', password: 'alice2025' }
+  ];
+
+  // 骑手（deliverers）
+  const MOCK_DELIVERERS = [
+    { deliverer_id: 1, name: 'admin',  phone: '13800138000', status: 1, responsible_area: '全城覆盖', password: 'admin' },
+    { deliverer_id: 2, name: '张三',   phone: '13800138001', status: 1, responsible_area: '朝阳区建国路', password: 'zhangsan123' },
+    { deliverer_id: 3, name: '李四',   phone: '13800138002', status: 0, responsible_area: '海淀区中关村', password: 'lisi456' }
+  ];
+
+  // 订单（结构对齐 orders 表）
+  const MOCK_ORDERS = [
+    { order_id: 7,  user_id: 1,  shop_id: 1, deliverer_id: 2, total_amount: 101.00, status: 1, created_at: '2025-12-05 07:17:39' },
+    { order_id: 8,  user_id: 7,  shop_id: 1, deliverer_id: 2, total_amount: 43.00,  status: 2, created_at: '2025-12-05 21:21:20' },
+    { order_id: 9,  user_id: 8,  shop_id: 1, deliverer_id: 1, total_amount: 22.00,  status: 4, created_at: '2025-12-05 15:14:19' },
+    { order_id: 10, user_id: 9,  shop_id: 1, deliverer_id: 3, total_amount: 35.00,  status: 5, created_at: '2025-12-05 15:14:24' },
+    { order_id: 11, user_id: 10, shop_id: 1, deliverer_id: 2, total_amount: 8.00,   status: 6, created_at: '2025-12-05 15:14:49' },
+    { order_id: 12, user_id: 8,  shop_id: 1, deliverer_id: 2, total_amount: 22.00,  status: 8, created_at: '2025-12-05 15:15:41' }
+  ];
+
+  // 菜品（对齐 dishes 表）
+  const MOCK_DISHES = [
+    { dish_id: 1,  shop_id: 1, dish_name: '全麦面包', price: 5.00,  stock: 100, status: 1 },
+    { dish_id: 5,  shop_id: 1, dish_name: '鱼香肉丝', price: 32.00, stock: 45,  status: 1 },
+    { dish_id: 6,  shop_id: 1, dish_name: '番茄炒蛋', price: 22.00, stock: 60,  status: 1 },
+    { dish_id: 7,  shop_id: 1, dish_name: '招牌红烧肉', price: 48.00, stock: 30, status: 1 },
+    { dish_id: 9,  shop_id: 1, dish_name: '冬瓜排骨汤', price: 35.00, stock: 25, status: 1 },
+    { dish_id: 3,  shop_id: 3, dish_name: '牛奶',       price: 3.50, stock: 80,  status: 1 }
+  ];
+
+  // 订单菜明细（对齐 order_dishes 表）
+  const MOCK_ORDER_DISHES = [
+    { id: 1,  order_id: 7,  dish_id: 9,  dish_name: '冬瓜排骨汤', quantity: 1, unit_price: 35.00, subtotal: 35.00 },
+    { id: 2,  order_id: 7,  dish_id: 5,  dish_name: '鱼香肉丝',   quantity: 1, unit_price: 32.00, subtotal: 32.00 },
+    { id: 3,  order_id: 7,  dish_id: 7,  dish_name: '招牌红烧肉', quantity: 1, unit_price: 48.00, subtotal: 48.00 },
+
+    { id: 4,  order_id: 8,  dish_id: 6,  dish_name: '番茄炒蛋', quantity: 1, unit_price: 22.00, subtotal: 22.00 },
+    { id: 5,  order_id: 8,  dish_id: 1,  dish_name: '全麦面包', quantity: 1, unit_price: 5.00,  subtotal: 5.00 },
+
+    { id: 6,  order_id: 9,  dish_id: 6,  dish_name: '番茄炒蛋', quantity: 1, unit_price: 22.00, subtotal: 22.00 },
+
+    { id: 7,  order_id: 10, dish_id: 5,  dish_name: '鱼香肉丝', quantity: 1, unit_price: 32.00, subtotal: 32.00 },
+
+    { id: 8,  order_id: 11, dish_id: 1,  dish_name: '全麦面包', quantity: 1, unit_price: 5.00,  subtotal: 5.00 },
+    { id: 9,  order_id: 11, dish_id: 3,  dish_name: '牛奶',     quantity: 1, unit_price: 3.00,  subtotal: 3.00 },
+
+    { id: 10, order_id: 12, dish_id: 7,  dish_name: '招牌红烧肉', quantity: 1, unit_price: 48.00, subtotal: 48.00 },
+  ];
+
+  const { createApp } = Vue;
+
+  const App = {
+    data() {
+      return {
+        loginForm: {
+          username: 'admin',
+          password: 'admin'
+        },
+        currentShop: null,
+        shopOpen: true,
+        activeMenu: 'orders',
+        orderStatusFilter: 'all',
+        orders: [],     // 当前店铺的订单
+        dishes: [],     // 当前店铺的菜
+        users: MOCK_USERS,
+        deliverers: MOCK_DELIVERERS,
+        // ===== 新增：编辑菜品弹窗相关状态 =====
+        editDialogVisible: false,
+        editForm: {
+          dish_id: null,
+          shop_id: null,
+          dish_name: '',
+          price: 0,
+          stock: 0,
+          status: 1
+        }
+      };
+    },
+    computed: {
+      // 订单 + 用户 + 菜品明细 + 骑手，一起拼好给界面用
+      displayOrders() {
+        if (!this.currentShop) return [];
+
+        const userMap = {};
+        this.users.forEach(u => { userMap[u.user_id] = u; });
+
+        const delivererMap = {};
+        this.deliverers.forEach(d => { delivererMap[d.deliverer_id] = d; });
+
+        const itemsByOrder = {};
+        MOCK_ORDER_DISHES.forEach(od => {
+          if (!itemsByOrder[od.order_id]) itemsByOrder[od.order_id] = [];
+          itemsByOrder[od.order_id].push(od);
+        });
+
+        let list = this.orders.map(o => {
+          const u = userMap[o.user_id] || {};
+          const d = delivererMap[o.deliverer_id] || {};
+          return {
+            ...o,
+            user_name: u.user_name || '未知用户',
+            address: u.main_address || '未知地址',
+            deliverer_name: d.name || '',
+            deliverer_phone: d.phone || '',
+            items: itemsByOrder[o.order_id] || []
+          };
+        });
+
+        if (this.orderStatusFilter === 'all') {
+          return list;
+        } else if (this.orderStatusFilter === 'cancel') {
+          return list.filter(o => o.status === 3 || o.status === 7);
+        } else {
+          const target = Number(this.orderStatusFilter);
+          return list.filter(o => o.status === target);
+        }
+      },
+      menuForShop() {
+        if (!this.currentShop) return [];
+        return this.dishes;
+      },
+      todayOrderCount() {
+        return this.orders.length;
+      },
+      todayRevenue() {
+        return this.orders.reduce((s, o) => s + (o.total_amount || 0), 0);
+      },
+      pendingCount() {
+        return this.orders.filter(o => [1,2,4,5,8].includes(o.status)).length;
+      }
+    },
+    methods: {
+      // 登录（Mock：用 shops 表中的用户名 + 密码）
+      handleLogin() {
+        const name = this.loginForm.username.trim();
+        const pwd = this.loginForm.password.trim();
+
+        if (!name || !pwd) {
+          ElementPlus.ElMessage.warning('请输入用户名和密码');
+          return;
         }
 
-        function logout() {
-            currentUser = null;
-            currentShopId = null; // 退出时清空店铺ID
-            document.getElementById('app-container').style.display = 'none';
-            document.getElementById('login-container').style.display = 'block';
-            if (refreshInterval) { 
-                clearInterval(refreshInterval); 
-                refreshInterval = null; 
-            }
+        const shop = MOCK_SHOPS.find(s => s.shop_name === name && s.password === pwd);
+        if (!shop) {
+          ElementPlus.ElMessage.error('用户名或密码错误（Mock）');
+          return;
         }
 
-        function switchTab(tabName) {
-            const tabContents = document.querySelectorAll('.tab-content'); 
-            tabContents.forEach(c => c.classList.remove('active'));
-            const tabs = document.querySelectorAll('.tab'); 
-            tabs.forEach(t => t.classList.remove('active'));
-            document.getElementById(`${tabName}-tab`).classList.add('active');
-            document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
-            if (tabName === 'orders') loadOrders(); 
-            else if (tabName === 'menu') loadMenu();
+        this.currentShop = { ...shop };
+        this.shopOpen = this.currentShop.status === 1;
+
+        // 加载当前店铺的订单 + 菜品
+        this.loadOrders();
+        this.loadDishes();
+
+        ElementPlus.ElMessage.success('登录成功，进入商家工作台（Mock）');
+      },
+      loadOrders() {
+        if (USE_MOCK || !this.currentShop) {
+          this.orders = MOCK_ORDERS.filter(o => o.shop_id === this.currentShop.shop_id);
+          return;
+        }
+        // 以后接真实后端时，可以这样写：
+        // fetch(`/shop/getordersbyshopid?shop_id=${this.currentShop.shop_id}`)
+        //   .then(res => res.json())
+        //   .then(data => { this.orders = data; });
+      },
+      loadDishes() {
+        if (USE_MOCK || !this.currentShop) {
+          this.dishes = MOCK_DISHES.filter(d => d.shop_id === this.currentShop.shop_id);
+          return;
+        }
+        // 真实后端：比如 /shop/getdishes?shop_id=...
+      },
+      toggleShopOpen(val) {
+        this.currentShop.status = val ? 1 : 0;
+        ElementPlus.ElMessage.success(val ? '已设置为营业中（Mock）' : '已设置为打烊（Mock）');
+        // 真实情况：这里可以调用 /shop/setstatus
+      },
+      handleUserCommand(cmd) {
+        if (cmd === 'logout') {
+          ElementPlus.ElMessageBox.confirm('确定退出登录吗？', '提示', {
+            confirmButtonText: '退出',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }).then(() => {
+            this.currentShop = null;
+          }).catch(() => {});
+        } else if (cmd === 'profile') {
+          ElementPlus.ElMessage.info('店铺资料编辑暂为 Mock，可后续接后端表单。');
+        }
+      },
+      statusText(s) {
+        const map = {
+          0: '未下单',
+          1: '待支付',
+          2: '待接单',
+          3: '已自我取消',
+          4: '待配送',
+          5: '配送中',
+          6: '已完成',
+          7: '已被商家取消',
+          8: '备餐中'
+        };
+        return map[s] || '未知';
+      },
+      statusClass(s) {
+        return {
+          'order-status-tag': true,
+          'status-warn': s === 1 || s === 2 || s === 4 || s === 8,
+          'status-info': s === 5,
+          'status-success': s === 6,
+          'status-error': s === 3 || s === 7
+        };
+      },
+      setStatus(order, newStatus) {
+        order.status = newStatus;
+        ElementPlus.ElMessage.success(`已将订单 #${order.order_id} 状态改为：${this.statusText(newStatus)}（仅前端 Mock）`);
+        // 真实情况这里调用 /shop/updateorderstatus
+      },
+      refreshOrders() {
+        this.loadOrders();
+        ElementPlus.ElMessage.info('已刷新订单（Mock）');
+      },
+      addMockDish() {
+        const maxId = this.dishes.reduce((m, d) => Math.max(m, d.dish_id), 0) + 1;
+        this.dishes.push({
+          dish_id: maxId,
+          shop_id: this.currentShop.shop_id,
+          dish_name: '新菜品 #' + maxId,
+          price: 19.9,
+          stock: 50,
+          status: 1
+        });
+        ElementPlus.ElMessage.success('已添加一条示例菜品（仅前端）');
+      },
+      toggleDishStatus(d) {
+        d.status = d.status === 1 ? 0 : 1;
+        ElementPlus.ElMessage.success(d.status === 1 ? '菜品已上架（Mock）' : '菜品已停售（Mock）');
+      },
+      // ===== 替换：编辑菜品，弹出弹窗 =====
+      editDish(d) {
+        // 浅拷贝到表单，避免直接改原对象
+        this.editForm = {
+          dish_id: d.dish_id,
+          shop_id: d.shop_id,
+          dish_name: d.dish_name,
+          price: d.price,
+          stock: d.stock,
+          status: d.status
+        };
+        this.editDialogVisible = true;
+      },
+      // ===== 新增：保存编辑结果 =====
+      saveDishEdit() {
+        if (!this.editForm.dish_name.trim()) {
+          ElementPlus.ElMessage.warning('菜名不能为空');
+          return;
+        }
+        if (this.editForm.price < 0) {
+          ElementPlus.ElMessage.warning('价格不能为负');
+          return;
+        }
+        if (this.editForm.stock < 0) {
+          ElementPlus.ElMessage.warning('库存不能为负');
+          return;
         }
 
-        // 核心修改2：请求订单接口时传递shopid（GET方式拼接query参数）
-        function loadOrders() {
-            if (!currentShopId) {
-                alert('未获取到店铺ID，无法加载订单！');
-                document.getElementById('orders-container').innerHTML = '<p>未获取到店铺ID</p>';
-                return;
-            }
-            fetch(`/shop/getordersbyshopid?shop_id=${encodeURIComponent(currentShopId)}`)
-                .then(r => { if (!r.ok) throw new Error('加载订单失败'); return r.json(); })
-                .then(list => {
-                    const c = document.getElementById('orders-container');
-                    if (!Array.isArray(list) || list.length === 0) { c.innerHTML = '<p>暂无订单</p>'; return; }
-                    const statusText = {
-                        0: '未下单',
-                        1: '待支付',
-                        2: '待接单',
-                        3: '已自我取消',
-                        4: '待配送',
-                        5: '配送中',
-                        6: '已完成',
-                        7: '已被商家取消',
-                        8: '备餐中'
-                    };
-                    const fmtAmount = (x) => {
-                        if (x == null) return '0.00';
-                        if (typeof x === 'string') { const n = Number(x); return isNaN(n) ? '0.00' : n.toFixed(2); }
-                        if (typeof x === 'number') return x.toFixed(2);
-                        return '0.00';
-                    };
-                    c.innerHTML = '';
-                    list.forEach(o => {
-                        const oid = o.order_id || o.OrderID;
-                        const uid = o.user_id || o.UserID;
-                        const amt = fmtAmount(o.total_amount || o.TotalAmount);
-                        const st = o.status || o.Status;
-                        const ct = o.created_at || o.CreatedAt;
-                        const orderItem = document.createElement('div');
-                        orderItem.className = 'order-item';
-                        orderItem.innerHTML = `
-                            <div class="order-header">
-                                <span>订单ID: ${oid ?? '未知'}</span>
-                                <select class="status-select" onchange="updateOrderStatus(${oid}, this.value)">
-                                    <option value="0" ${st === 0 ? 'selected' : ''}>未下单</option>
-                                    <option value="1" ${st === 1 ? 'selected' : ''}>待支付</option>
-                                    <option value="2" ${st === 2 ? 'selected' : ''}>待接单</option>
-                                    <option value="3" ${st === 3 ? 'selected' : ''}>已自我取消</option>
-                                    <option value="4" ${st === 4 ? 'selected' : ''}>待配送</option>
-                                    <option value="5" ${st === 5 ? 'selected' : ''}>配送中</option>
-                                    <option value="6" ${st === 6 ? 'selected' : ''}>已完成</option>
-                                    <option value="7" ${st === 7 ? 'selected' : ''}>已被商家取消</option>
-                                    <option value="8" ${st === 8 ? 'selected' : ''}>备餐中</option>
-                                </select>
-                            </div>
-                            <div class="order-details">
-                                <p>用户ID: ${uid ?? '未知'}</p>
-                                <p>订单状态: ${statusText[st] ?? '未知'}</p>
-                                <p>总价: ¥${amt}</p>
-                                <p>下单时间: ${ct ? new Date(ct).toLocaleString() : '未知'}</p>
-                            </div>
-                        `;
-                        c.appendChild(orderItem);
-                    });
-                })
-                .catch(() => {
-                    document.getElementById('orders-container').innerHTML = '<p>加载订单失败，请重试</p>';
-                });
+        const idx = this.dishes.findIndex(d => d.dish_id === this.editForm.dish_id);
+        if (idx === -1) {
+          ElementPlus.ElMessage.error('未找到对应菜品，保存失败');
+          return;
         }
 
-        // 新增：订单状态更新函数（预留，可根据后端接口完善）
-        function updateOrderStatus(orderId, status) {
-            if (!currentShopId) { alert('未获取到店铺ID，无法更新订单状态！'); return; }
-            const payload = { order_id: orderId, status: Number(status), shop_id: Number(currentShopId) };
-            fetch(`/api/orders/update?shop_id=${encodeURIComponent(currentShopId)}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).then(r => { if (!r.ok) throw new Error('更新失败'); loadOrders(); }).catch(() => alert('订单状态更新失败'));
-        }
+        // 更新原数组中的数据
+        this.dishes[idx].dish_name = this.editForm.dish_name.trim();
+        this.dishes[idx].price = Number(this.editForm.price);
+        this.dishes[idx].stock = Number(this.editForm.stock);
+        this.dishes[idx].status = this.editForm.status;
 
-        function loadMenu() { 
-            fetch('/api/menu').then(r => r.json()).then(items => { 
-                const c = document.getElementById('menu-container'); 
-                c.innerHTML = ''; 
-                items.forEach(item => { 
-                    const div = document.createElement('div'); 
-                    div.className = 'menu-item'; 
-                    div.innerHTML = `<div><h3>${item.name}</h3><p>${item.description||''}</p><p>价格: ¥${item.price.toFixed(2)}</p></div><div class="action-buttons"><button class="edit-btn" onclick="editMenuItem(${item.id})">编辑</button><button class="delete-btn" onclick="deleteMenuItem(${item.id})">删除</button></div>`; 
-                    c.appendChild(div); 
-                }); 
-            }); 
-        }
+        this.editDialogVisible = false;
+        ElementPlus.ElMessage.success('菜品信息已更新（仅前端 Mock）');
+      }
+    }
+  };
 
-        function showAddMenuItemForm() { 
-            document.getElementById('menu-item-modal').style.display = 'flex'; 
-            document.getElementById('modal-title').textContent = '添加菜品'; 
-            document.getElementById('menu-item-form').reset(); 
-        }
-        function closeMenuItemModal() { 
-            document.getElementById('menu-item-modal').style.display = 'none'; 
-        }
-        function editMenuItem(id) { 
-            document.getElementById('menu-item-modal').style.display = 'flex'; 
-            document.getElementById('modal-title').textContent = '编辑菜品'; 
-        }
-        function deleteMenuItem(id) { 
-            fetch(`/api/menu?id=${id}`, { method:'DELETE' })
-            .then(r => { 
-                if (!r.ok) throw new Error(); 
-                loadMenu(); 
-            })
-            .catch(() => alert('删除失败')); 
-        }
-        function startRefreshInterval() { 
-            refreshInterval = setInterval(loadOrders, 10000); 
-        }
-    </script>
+  const app = Vue.createApp(App);
+  // 注册 Element Plus & 图标
+  app.use(ElementPlus);
+  for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+    app.component(key, component);
+  }
+  app.mount('#app');
+</script>
 </body>
 </html>
