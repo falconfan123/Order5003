@@ -325,7 +325,7 @@
                                 @click="cancelOrder(order)"
                             >取消订单</el-button>
                             <el-button size="small">联系商家</el-button>
-                            <el-button type="primary" size="small" plain>再来一单</el-button>
+                            <el-button type="primary" size="small" plain @click="orderAgain(order)">再来一单</el-button>
                         </div>
                     </div>
                 </div>
@@ -523,34 +523,22 @@
 
                 const fetchMenu = (shopId) => {
                     loadingMenu.value = true;
-                    fetch('/menudish/getmenudishesbyid', { 
+                    return fetch('/menudish/getmenudishesbyid', { 
                         method: 'POST', 
                         headers: {'Content-Type':'application/json'}, 
                         body: JSON.stringify({shop_id: shopId}) 
                     })
+                    .then(res => { if (!res.ok) throw new Error('获取菜单失败'); return res.json(); })
                     .then(res => {
-                        if (!res.ok) throw new Error('获取菜单失败');
-                        return res.json();
-                    })
-                    .then(res => {
-                        console.log('后端返回的菜单原始数据：', res);
                         menuItems.value = (res.data||[]).map(item => {
                             const id = item.dish_id ?? item.dishId ?? item.id ?? item.MenuID ?? `dish_${Date.now()}_${Math.floor(Math.random()*1000)}`;
                             const name = item.dish_name ?? item.dishName ?? item.name ?? `菜品#${id}`;
                             const price = item.price ?? item.Price ?? 0;
-                            return { 
-                                id, 
-                                name, 
-                                price, 
-                                description: item.description||'', 
-                                image: item.image||null, 
-                                shop_id: item.shop_id || shopId 
-                            };
+                            return { id, name, price, description: item.description||'', image: item.image||null, shop_id: item.shop_id || shopId };
                         });
-                        console.log('标准化后的菜单数据：', menuItems.value);
                     })
                     .catch(()=>ElMessage.error('获取菜单失败'))
-                    .finally(()=>loadingMenu.value=false);
+                    .finally(()=>{ loadingMenu.value=false; });
                 };
 
                 // 交互
@@ -734,6 +722,33 @@
                     }).catch(() => {});
                 };
 
+                const mockOrderItems = async (order, shopId) => {
+                    if (menuItems.value.length === 0) await fetchMenu(shopId);
+                    const pick = menuItems.value.slice(0, Math.min(2, menuItems.value.length));
+                    return pick.map(d => ({ dish_id: d.id, quantity: 1, price: d.price }));
+                };
+
+                const orderAgain = async (order) => {
+                    const sid = order.shop_id ?? order.ShopID;
+                    const sname = order.shop_name ?? `商家ID:${sid}`;
+                    let targetShop = shops.value.find(s => s.shop_id === sid);
+                    if (!targetShop) targetShop = { shop_id: sid, shop_name: sname, status: 1 };
+                    showOrderHistory.value = false;
+                    switchToShop(targetShop);
+                    await fetchMenu(targetShop.shop_id);
+                    let items = Array.isArray(order.dishes) ? order.dishes : await mockOrderItems(order, targetShop.shop_id);
+                    cart.value = [];
+                    items.forEach(it => {
+                        const did = it.dish_id ?? it.id;
+                        const m = menuItems.value.find(d => d.id === did);
+                        const name = m ? m.name : `菜品#${did}`;
+                        const price = m ? m.price : (it.price ?? 0);
+                        const qty = it.quantity ?? 1;
+                        cart.value.push({ id: did, name, price, quantity: qty, shop_id: targetShop.shop_id });
+                    });
+                    ElMessage.success('已将订单菜品加入购物车');
+                };
+
                 // 筛选逻辑
                 const handleCategoryClick = (n, typeId) => { 
                     currentCategory.value = n; 
@@ -761,7 +776,7 @@
                     menuItems, loadingMenu, addToCart, cart, cartTotal, increaseQuantity, decreaseQuantity, clearCart, submitOrder, submitting,
                     categories, searchKeyword, currentCategory, handleCategoryClick, currentSort, handleSort,
                     locationDialogVisible, currentAddress, mockAddresses, selectAddress, addNewAddress,
-                    showOrderHistory, orders, loadingOrders, openOrderList, closeOrderList, cancelOrder,
+                    showOrderHistory, orders, loadingOrders, openOrderList, closeOrderList, cancelOrder, orderAgain,
                     User, Lock,
                     JSON // 暴露JSON用于模板调试
                 };
