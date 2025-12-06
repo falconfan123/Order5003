@@ -22,7 +22,7 @@ type OrderService interface {
 	GetDishByID(ctx context.Context, tx *gorm.DB, dishID int) (*bizmodel.Dishes, error)
 	CreateOrderMaster(ctx context.Context, tx *gorm.DB, orderMaster *bizmodel.Order) (int, error)
 	CreateOrderDish(ctx context.Context, tx *gorm.DB, orderDish *bizmodel.OrderDishDetail) error
-	GetDishesByOrderID(ctx context.Context, orderID int) ([]bizmodel.OrderDishDetail, error)
+	GetOrderDishesByOrderID(ctx context.Context, orderID int) ([]bizmodel.OrderDishDetail, error)
 }
 
 type ShopService interface {
@@ -35,6 +35,9 @@ type ShopService interface {
 	GetBusinessHoursByShopID(shopID int) (string, error)
 	GetShopTypeByShopID(shopID int) (int, error)
 	UpdateShopStatus(shopID int, status int) (int, error)
+	GetDishesByOrderID(orderID int) ([]bizmodel.Dishes, error)
+	AcceptOrder(orderID int) error
+	WaitingForDeliveryOrder(orderID int) error
 }
 
 type UserService interface {

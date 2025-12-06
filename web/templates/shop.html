@@ -478,7 +478,7 @@
                 <el-option label="已取消（用户/商家）" value="cancel"></el-option>
               </el-select>
               <el-button size="small" @click="refreshOrders">
-                <el-icon><Refresh /></el-icon>刷新（Mock）
+                <el-icon><Refresh /></el-icon>刷新
               </el-button>
             </div>
           </div>
@@ -501,7 +501,7 @@
                 </span>
               </div>
               <div class="order-line">
-                用户：{{ o.user_name }}（ID: {{ o.user_id }}）
+                用户：{{ o.user_name }}
               </div>
               <div class="order-line">
                 地址：{{ o.address }}
@@ -512,7 +512,7 @@
               <ul class="dish-list">
                 <li
                   v-for="d in o.items"
-                  :key="d.id"
+                  :key="d.dish_id || d.id"
                   class="dish-item"
                 >
                   {{ d.dish_name }} x{{ d.quantity }} （¥{{ d.subtotal.toFixed(2) }}）
@@ -525,11 +525,11 @@
 
               <div style="margin-top:auto;display:flex;justify-content:flex-end;gap:6px;">
                 <template v-if="o.status === 2">
-                  <el-button size="small" type="primary" @click="setStatus(o, 8)">接单</el-button>
+                  <el-button size="small" type="primary" @click="acceptOrder(o)">接单</el-button>
                   <el-button size="small" type="danger" plain @click="setStatus(o, 7)">拒单</el-button>
                 </template>
                 <template v-else-if="o.status === 8">
-                  <el-button size="small" type="success" @click="setStatus(o, 4)">备餐完成</el-button>
+                  <el-button size="small" type="success" @click="markWaitingForDelivery(o)">备餐完成</el-button>
                 </template>
                 <template v-else-if="o.status === 4">
                   <el-button size="small" disabled>待配送</el-button>
@@ -764,6 +764,7 @@
         dishes: [],     // 当前店铺的菜
         users: MOCK_USERS,
         deliverers: MOCK_DELIVERERS,
+        orderItemsMap: {},
         // ===== 新增：编辑菜品弹窗相关状态 =====
         editDialogVisible: false,
         editForm: {
@@ -787,11 +788,7 @@
         const delivererMap = {};
         this.deliverers.forEach(d => { delivererMap[d.deliverer_id] = d; });
 
-        const itemsByOrder = {};
-        MOCK_ORDER_DISHES.forEach(od => {
-          if (!itemsByOrder[od.order_id]) itemsByOrder[od.order_id] = [];
-          itemsByOrder[od.order_id].push(od);
-        });
+        const itemsByOrder = this.orderItemsMap || {};
 
         let list = this.orders.map(o => {
           const u = userMap[o.user_id] || {};
@@ -905,8 +902,45 @@
                 created_at: o.created_at ?? o.CreatedAt
               };
             });
+            this.fetchOrderDishesForOrders();
           })
           .catch(() => { this.orders = []; });
+      },
+      async fetchOrderDishesForOrders() {
+        const orders = Array.isArray(this.orders) ? this.orders : [];
+        const tasks = orders.map(o => {
+          const oid = o.order_id || o.OrderID || o.id;
+          if (!oid) return Promise.resolve({ oid: null, items: [] });
+          return fetch('/shop/getorderdishesbyshopid', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ OrderID: oid })
+          })
+          .then(res => res.ok ? res.json() : [])
+          .then(list => {
+            const arr = Array.isArray(list) ? list : [];
+            const items = arr.map(d => {
+              const up = d.unit_price ?? d.UnitPrice;
+              const st = d.subtotal ?? d.Subtotal;
+              const unitPriceNum = typeof up === 'string' ? parseFloat(up) : Number(up || 0);
+              const subtotalNum = typeof st === 'string' ? parseFloat(st) : Number(st || 0);
+              return {
+                order_id: d.order_id ?? d.OrderID ?? oid,
+                dish_id: d.dish_id ?? d.DishID,
+                dish_name: d.dish_name ?? d.DishName,
+                quantity: d.quantity ?? d.Quantity ?? 1,
+                unit_price: isNaN(unitPriceNum) ? 0 : unitPriceNum,
+                subtotal: isNaN(subtotalNum) ? 0 : subtotalNum,
+              };
+            });
+            return { oid, items };
+          })
+          .catch(() => ({ oid, items: [] }));
+        });
+        const results = await Promise.all(tasks);
+        const map = {};
+        results.forEach(({ oid, items }) => { if (oid) map[oid] = items; });
+        this.orderItemsMap = map;
       },
       loadDishes() {
         if (USE_MOCK || !this.currentShop) {
@@ -1022,9 +1056,47 @@
         ElementPlus.ElMessage.success(`已将订单 #${order.order_id} 状态改为：${this.statusText(newStatus)}（仅前端 Mock）`);
         // 真实情况这里调用 /shop/updateorderstatus
       },
+      async markWaitingForDelivery(order) {
+        const oid = order.order_id || order.OrderID || order.id;
+        if (!oid) {
+          ElementPlus.ElMessage.error('订单ID缺失');
+          return;
+        }
+        try {
+          const res = await fetch('/shop/watingfordeliveryorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ OrderID: oid })
+          });
+          if (!res.ok) throw new Error('标记备餐完成失败');
+          await this.loadOrders();
+          ElementPlus.ElMessage.success(`已标记备餐完成 #${oid}`);
+        } catch (e) {
+          ElementPlus.ElMessage.error(e.message || '操作失败');
+        }
+      },
+      async acceptOrder(order) {
+        const oid = order.order_id || order.OrderID || order.id;
+        if (!oid) {
+          ElementPlus.ElMessage.error('订单ID缺失');
+          return;
+        }
+        try {
+          const res = await fetch('/shop/acceptorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ OrderID: oid })
+          });
+          if (!res.ok) throw new Error('接单失败');
+          await this.loadOrders();
+          ElementPlus.ElMessage.success(`已接单 #${oid}`);
+        } catch (e) {
+          ElementPlus.ElMessage.error(e.message || '接单失败');
+        }
+      },
       refreshOrders() {
         this.loadOrders();
-        ElementPlus.ElMessage.info('已刷新订单（Mock）');
+        ElementPlus.ElMessage.success('已刷新订单');
       },
       addMockDish() {
         const maxId = this.dishes.reduce((m, d) => Math.max(m, d.dish_id), 0) + 1;

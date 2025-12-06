@@ -20,7 +20,7 @@ func (s *GormStore) GetAllMenuItems() []bizmodel.Menu {
 }
 
 func (s *GormStore) GetMenuItemByID(id int) (bizmodel.Menu, error) {
-	e, err := dao.GetDishByID(s.db, id)
+	e, err := dao.GetDishByDishID(s.db, id)
 	if err != nil {
 		return bizmodel.Menu{}, errors.New("menu item not found")
 	}

@@ -116,3 +116,42 @@ func (s *GormStore) UpdateShopStatus(shopID int, status int) (int, error) {
 	}
 	return int(e.Status), nil
 }
+
+func (s *GormStore) GetDishesByOrderID(orderID int) ([]bizmodel.Dishes, error) {
+	OrderDish, err := dao.GetOrderDishesByOrderID(s.db, orderID)
+	logger.Info("list order dishes by order id", zap.Any("list", OrderDish), zap.Int("orderID", orderID))
+	if err != nil {
+		return []bizmodel.Dishes{}, errors.New("dishes not found")
+	}
+	out := make([]bizmodel.Dishes, 0, len(OrderDish))
+	for _, e := range OrderDish {
+		dish, err := dao.GetDishByDishID(s.db, e.DishID)
+		if err != nil {
+			return []bizmodel.Dishes{}, errors.New("dishes not found")
+		}
+		out = append(out, bizmodel.Dishes{
+			DishID:   dish.DishID,
+			ShopID:   dish.ShopID,
+			DishName: dish.DishName,
+			Price:    dish.Price,
+			Status:   int(dish.Status),
+		})
+	}
+	return out, nil
+}
+
+// AcceptOrder 接受指定订单
+func (s *GormStore) AcceptOrder(orderID int) error {
+	if err := dao.UpdateOrderStatus(s.db, orderID, int(bizmodel.OrderStatusPreparing)); err != nil {
+		return errors.New("update order status failed")
+	}
+	return nil
+}
+
+// WaitingForDeliveryOrder 订单配送中
+func (s *GormStore) WaitingForDeliveryOrder(orderID int) error {
+	if err := dao.UpdateOrderStatus(s.db, orderID, int(bizmodel.OrderStatusWaitingForDelivery)); err != nil {
+		return errors.New("update order status failed")
+	}
+	return nil
+}

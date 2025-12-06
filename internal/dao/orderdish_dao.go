@@ -12,3 +12,11 @@ func CreateOrderDish(db *gorm.DB, e *model.OrderDishEntity) error {
 	}
 	return nil
 }
+
+func GetOrderDishesByOrderID(db *gorm.DB, orderID int) ([]model.OrderDishEntity, error) {
+	var list []model.OrderDishEntity
+	if err := db.Where("order_id = ?", orderID).Find(&list).Error; err != nil {
+		return []model.OrderDishEntity{}, err
+	}
+	return list, nil
+}

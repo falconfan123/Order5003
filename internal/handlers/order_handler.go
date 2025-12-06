@@ -171,7 +171,7 @@ func (h *OrderHandler) GetDishesByOrderID(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
 	}
-	orderDishDetails, err := h.svc.GetDishesByOrderID(c.Request.Context(), req.OrderID)
+	orderDishDetails, err := h.svc.GetOrderDishesByOrderID(c.Request.Context(), req.OrderID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return

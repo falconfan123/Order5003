@@ -26,7 +26,7 @@ func GetOrdersByUserID(db *gorm.DB, userID int) ([]model.OrderEntity, error) {
 	return e, nil
 }
 
-func UpdateOrderStatus(db *gorm.DB, id int, status string) error {
+func UpdateOrderStatus(db *gorm.DB, id int, status int) error {
 	return db.Model(&model.OrderEntity{}).Where("order_id = ?", id).Update("status", status).Error
 }
 

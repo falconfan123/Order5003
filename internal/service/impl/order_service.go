@@ -65,7 +65,7 @@ func (s *GormStore) WithTransaction(ctx context.Context, fn func(tx *gorm.DB) er
 
 func (s *GormStore) GetDishByID(ctx context.Context, tx *gorm.DB, dishID int) (*bizmodel.Dishes, error) {
 	// 1. 调用Dao层查询数据库（传递事务tx）
-	dishEntity, err := dao.GetDishByID(tx, dishID)
+	dishEntity, err := dao.GetDishByDishID(tx, dishID)
 	if err != nil {
 		return nil, fmt.Errorf("service查询菜品失败：%v", err)
 	}
@@ -120,9 +120,9 @@ func (s *GormStore) CreateOrderDish(ctx context.Context, tx *gorm.DB, detail *bi
 	return nil
 }
 
-func (s *GormStore) GetDishesByOrderID(ctx context.Context, orderID int) ([]bizmodel.OrderDishDetail, error) {
+func (s *GormStore) GetOrderDishesByOrderID(ctx context.Context, orderID int) ([]bizmodel.OrderDishDetail, error) {
 	// 1. 调用Dao层查询数据库（传递事务tx）
-	orderDishEntities, err := dao.GetDishesByOrderID(s.db, orderID)
+	orderDishEntities, err := dao.GetOrderDishesByOrderID(s.db, orderID)
 	if err != nil {
 		return nil, fmt.Errorf("service查询订单菜品失败：%v", err)
 	}

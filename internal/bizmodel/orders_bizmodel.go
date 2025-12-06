@@ -11,12 +11,14 @@ type OrderStatus int
 // 可以在Orders的comment中查询到具体含义
 // 订单状态：0=未下单、1=待支付、2=待接单、3=已自我取消、4=待配送、5=配送中、6=已完成、7=已被商家取消、8=备餐中
 const (
-	OrderStatusPending         OrderStatus = 1
-	OrderStatusPreparing       OrderStatus = 8
-	OrderStatusReadyForDeliver OrderStatus = 5
-	OrderStatusCompleted       OrderStatus = 6
-	OrderStatusSelfCancelled   OrderStatus = 3
-	OrderStatusShopCancelled   OrderStatus = 7
+	OrderStatusPending            OrderStatus = 1
+	OrderStatusPreparing          OrderStatus = 8
+	OrderStatusDelivering         OrderStatus = 5
+	OrderStatusCompleted          OrderStatus = 6
+	OrderStatusSelfCancelled      OrderStatus = 3
+	OrderStatusShopCancelled      OrderStatus = 7
+	OrderStatusWaitingForAccept   OrderStatus = 2
+	OrderStatusWaitingForDelivery OrderStatus = 4
 )
 
 type OrderDishItem struct {
