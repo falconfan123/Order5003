@@ -49,3 +49,12 @@ func GetDishesByIDs(db *gorm.DB, dishIDs []int) ([]model.DishEntity, error) {
 	}
 	return dishes, nil
 }
+
+func GetDishesByOrderID(db *gorm.DB, orderID int) ([]model.OrderDishEntity, error) {
+	var orderDishes []model.OrderDishEntity
+	err := db.Where("order_id = ?", orderID).Find(&orderDishes).Error
+	if err != nil {
+		return nil, err
+	}
+	return orderDishes, nil
+}

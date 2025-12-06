@@ -157,3 +157,24 @@ func (h *OrderHandler) GetAllOrders(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, orders)
 }
+
+func (h *OrderHandler) GetDishesByOrderID(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	logger.Info("GetDishesByOrderID, request URL: %s, request body: %s", c.Request.URL, c.Request.Body)
+	var req struct {
+		OrderID int `json:"order_id"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+	orderDishDetails, err := h.svc.GetDishesByOrderID(c.Request.Context(), req.OrderID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, orderDishDetails)
+}

@@ -11,5 +11,6 @@ func RegisterOrderRoutes(r *gin.Engine, h *handlers.OrderHandler) {
 	{
 		orders.POST("/create", h.CreateOrder)
 		orders.GET("/getallbyid", h.GetAllOrders)
+		orders.POST("/getdishesbyorder", h.GetDishesByOrderID)
 	}
 }

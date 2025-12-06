@@ -119,3 +119,28 @@ func (s *GormStore) CreateOrderDish(ctx context.Context, tx *gorm.DB, detail *bi
 	}
 	return nil
 }
+
+func (s *GormStore) GetDishesByOrderID(ctx context.Context, orderID int) ([]bizmodel.OrderDishDetail, error) {
+	// 1. 调用Dao层查询数据库（传递事务tx）
+	orderDishEntities, err := dao.GetDishesByOrderID(s.db, orderID)
+	if err != nil {
+		return nil, fmt.Errorf("service查询订单菜品失败：%v", err)
+	}
+	// 2. 订单菜品不存在：返回 nil, nil
+	if orderDishEntities == nil {
+		return nil, nil
+	}
+	// 3. 模型转换：model.OrderDishEntity → bizmodel.OrderDishDetail（隔离数据库模型和业务模型）
+	var orderDishDetails []bizmodel.OrderDishDetail
+	for _, orderDishEntity := range orderDishEntities {
+		orderDishDetails = append(orderDishDetails, bizmodel.OrderDishDetail{
+			OrderID:   orderDishEntity.OrderID,
+			DishID:    orderDishEntity.DishID,
+			DishName:  orderDishEntity.DishName,
+			Quantity:  orderDishEntity.Quantity,
+			UnitPrice: orderDishEntity.UnitPrice,
+			Subtotal:  orderDishEntity.Subtotal,
+		})
+	}
+	return orderDishDetails, nil
+}
