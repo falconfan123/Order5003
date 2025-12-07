@@ -198,7 +198,9 @@ func (s *GormStore) WriteTodayOrderCountByShopID(shopID int, count int) error {
 	if err != nil {
 		return errors.New("get shop daily revenue failed")
 	}
+	logger.Info("existing", zap.Any("existing", existing.ID))
 	if existing.ID > 0 {
+		logger.Info("count", zap.Int("count", count))
 		if err := dao.UpdateShopDailyRevenueCount(s.db, existing, count); err != nil {
 			return errors.New("update shop daily revenue count failed")
 		}
@@ -213,4 +215,78 @@ func (s *GormStore) WriteTodayOrderCountByShopID(shopID int, count int) error {
 		return errors.New("create shop daily revenue failed")
 	}
 	return nil
+}
+
+// GetTodayRevenueByShopID 获取指定店铺的今日营业额
+func (s *GormStore) GetTodayRevenueByShopID(shopID int) (float64, error) {
+	//统计今日营业额 也就是status=8 且data是今日的orders总和
+	TodayFinishOrder, err := dao.GetTodayFinishOrderByShopID(s.db, shopID)
+	if err != nil {
+		return 0, errors.New("get today finish order failed")
+	}
+	revenue := 0.0
+	for _, order := range TodayFinishOrder {
+		revenue += order.TotalAmount.InexactFloat64()
+	}
+	//将更新的今日营业额写入数据库
+	if err := s.WriteTodayRevenueByShopID(shopID, revenue); err != nil {
+		return 0, errors.New("write today revenue failed")
+	}
+	return revenue, nil
+}
+
+// WriteTodayRevenueByShopID 写入指定店铺的今日营业额
+func (s *GormStore) WriteTodayRevenueByShopID(shopID int, revenue float64) error {
+	//先看是否已经存在 如果已经存在 则只变更revenue字段
+	existing, err := dao.GetShopDailyRevenueByShopIDAndDate(s.db, shopID, time.Now().Truncate(24*time.Hour))
+	if err != nil {
+		return errors.New("get shop daily revenue failed")
+	}
+	if existing.ID > 0 {
+		if err := dao.UpdateShopDailyRevenueRevenue(s.db, existing, revenue); err != nil {
+			return errors.New("update shop daily revenue revenue failed")
+		}
+		return nil
+	}
+	//如果不存在 则插入新记录
+	if err := dao.CreateShopDailyRevenue(s.db, model.ShopDailyRevenue{
+		ShopID:  int64(shopID),
+		Date:    time.Now().Truncate(24 * time.Hour),
+		Revenue: revenue,
+	}); err != nil {
+		return errors.New("create shop daily revenue failed")
+	}
+	return nil
+}
+
+// GetAllOrderCountByShopID 获取指定店铺的所有订单数
+func (s *GormStore) GetAllOrderCountByShopID(shopID int) ([]bizmodel.OrderCountAll, error) {
+	orderCounts, err := dao.GetAllOrderCountByShopID(s.db, shopID)
+	if err != nil {
+		return nil, errors.New("get all order count failed")
+	}
+	out := make([]bizmodel.OrderCountAll, 0, len(orderCounts))
+	for _, orderCount := range orderCounts {
+		out = append(out, bizmodel.OrderCountAll{
+			Date:       orderCount.Date,
+			OrderCount: orderCount.OrderCount,
+		})
+	}
+	return out, nil
+}
+
+// GetAllRevenueByShopID 获取指定店铺的所有营业额记录
+func (s *GormStore) GetAllRevenueByShopID(shopID int) ([]bizmodel.RevenueCountAll, error) {
+	revenueCounts, err := dao.GetAllOrderCountByShopID(s.db, shopID)
+	if err != nil {
+		return nil, errors.New("get all revenue count failed")
+	}
+	out := make([]bizmodel.RevenueCountAll, 0, len(revenueCounts))
+	for _, revenueCount := range revenueCounts {
+		out = append(out, bizmodel.RevenueCountAll{
+			Date:    revenueCount.Date,
+			Revenue: revenueCount.Revenue,
+		})
+	}
+	return out, nil
 }

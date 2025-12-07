@@ -32,4 +32,10 @@ func RegisterShopRoutes(r *gin.Engine, h *handlers.ShopHandler) {
 	g.POST("/startdish", func(c *gin.Context) { h.StartDish(c) })
 	//今日订单数
 	g.POST("/gettodayordercountbyshopid", func(c *gin.Context) { h.GetTodayOrderCountByShopID(c) })
+	// 今日营业额
+	g.POST("/gettodayrevenuebyshopid", func(c *gin.Context) { h.GetTodayRevenueByShopID(c) })
+	//历史所有订单数
+	g.POST("/getallordercountbyshopid", func(c *gin.Context) { h.GetAllOrderCountByShopID(c) })
+	//历史所有营业额
+	g.POST("/getallrevenuebyshopid", func(c *gin.Context) { h.GetAllRevenueByShopID(c) })
 }

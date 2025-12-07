@@ -45,6 +45,14 @@ type ShopService interface {
 	GetTodayOrderCountByShopID(shopID int) (int, error)
 	//写入今日订单数
 	WriteTodayOrderCountByShopID(shopID int, count int) error
+	//获取今日营业额
+	GetTodayRevenueByShopID(shopID int) (float64, error)
+	//写入今日营业额
+	WriteTodayRevenueByShopID(shopID int, revenue float64) error
+	//获取历史所有订单数
+	GetAllOrderCountByShopID(shopID int) ([]bizmodel.OrderCountAll, error)
+	//获取历史所有营业额
+	GetAllRevenueByShopID(shopID int) ([]bizmodel.RevenueCountAll, error)
 }
 
 type UserService interface {

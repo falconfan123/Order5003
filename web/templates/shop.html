@@ -649,6 +649,17 @@
               <div class="stat-value">{{ pendingCount }}</div>
             </div>
           </div>
+
+          <div v-show="!statLoading" style="margin-top:16px;display:flex;flex-direction:column;gap:16px;">
+            <div style="background:#fff;border:1px solid #f1f1f1;border-radius:12px;padding:12px;">
+              <div style="font-weight:700;margin-bottom:8px;">历史趋势 · 订单数</div>
+              <canvas ref="orderChart" style="width:100%;height:220px;"></canvas>
+            </div>
+            <div style="background:#fff;border:1px solid #f1f1f1;border-radius:12px;padding:12px;">
+              <div style="font-weight:700;margin-bottom:8px;">历史趋势 · 营业额（¥）</div>
+              <canvas ref="revenueChart" style="width:100%;height:220px;"></canvas>
+            </div>
+          </div>
         </section>
       </main>
     </div>
@@ -735,6 +746,9 @@
         // 营收相关
         statLoading: false,
         statsTodayOrderCount: 0,
+        statsTodayRevenue: 0,
+        seriesOrderCount: [],
+        seriesRevenue: [],
         // 操作加载状态
         operLoading: false,
         // 编辑弹窗
@@ -785,10 +799,7 @@
       },
       // 今日营业额
       todayRevenue() {
-        return this.orders.reduce((sum, o) => {
-          const amt = o.total_amount || o.TotalAmount || 0;
-          return sum + (typeof amt === 'string' ? parseFloat(amt) : amt);
-        }, 0);
+        return this.statsTodayRevenue || 0;
       },
       // 待处理订单数
       pendingCount() {
@@ -807,6 +818,11 @@
         const typeMap = { 0: '全部', 1: '甜品奶茶', 2: '炸鸡汉堡', 3: '美味中餐', 4: '生活百货' };
         const type = this.currentShop?.type || this.currentShop?.Type || 0;
         return typeMap[type] || '未知';
+      }
+    },
+    watch: {
+      activeMenu(val) {
+        if (val === 'stats') this.refreshStats();
       }
     },
     methods: {
@@ -1121,17 +1137,154 @@
       async loadStats() {
         this.statLoading = true;
         try {
-          const res = await this.request('/shop/gettodayordercountbyshopid', {
-            method: 'POST',
-            body: JSON.stringify({ shop_id: this.currentShop.shop_id })
-          });
-          const count = res?.count ?? res?.Count ?? 0;
+          const [cntRes, revRes] = await Promise.all([
+            this.request('/shop/gettodayordercountbyshopid', {
+              method: 'POST',
+              body: JSON.stringify({ shop_id: this.currentShop.shop_id })
+            }),
+            this.request('/shop/gettodayrevenuebyshopid', {
+              method: 'POST',
+              body: JSON.stringify({ shop_id: this.currentShop.shop_id })
+            })
+          ]);
+          const count = cntRes?.count ?? cntRes?.Count ?? 0;
+          const revenue = revRes?.revenue ?? revRes?.Revenue ?? 0;
           this.statsTodayOrderCount = Number(count) || 0;
+          this.statsTodayRevenue = Number(typeof revenue === 'string' ? parseFloat(revenue) : revenue) || 0;
+
+          await this.loadTrendData();
         } catch (e) {
           ElementPlus.ElMessage.warning('营收数据加载失败：' + e.message);
-        } finally {
-          this.statLoading = false;
         }
+        this.statLoading = false;
+        await Vue.nextTick();
+        this.drawLineChart(this.$refs.orderChart, this.seriesOrderCount, '#00cbd3');
+        this.drawLineChart(this.$refs.revenueChart, this.seriesRevenue, '#52c41a');
+      },
+      async loadTrendData() {
+        if (!this.currentShop) return;
+        try {
+          const [countListRes, revenueListRes] = await Promise.all([
+            this.request('/shop/getallordercountbyshopid', {
+              method: 'POST',
+              body: JSON.stringify({ shop_id: this.currentShop.shop_id })
+            }),
+            this.request('/shop/getallrevenuebyshopid', {
+              method: 'POST',
+              body: JSON.stringify({ shop_id: this.currentShop.shop_id })
+            })
+          ]);
+          const countRaw = countListRes?.count ?? countListRes?.Count ?? countListRes;
+          const revenueRaw = revenueListRes?.revenue ?? revenueListRes?.Revenue ?? revenueListRes;
+          this.seriesOrderCount = this.normalizeSeries(countRaw, ['order_count','OrderCount','count','Count','value','Value'])
+          this.seriesRevenue = this.normalizeSeries(revenueRaw, ['revenue','Revenue','amount','Amount','value','Value']);
+        } catch (e) {
+          ElementPlus.ElMessage.warning('趋势数据加载失败：' + e.message);
+          this.seriesOrderCount = [];
+          this.seriesRevenue = [];
+        }
+      },
+      normalizeSeries(raw, valueKeys) {
+        const out = [];
+        if (!raw) return out;
+        if (Array.isArray(raw)) {
+          raw.forEach((d, i) => {
+            if (d && typeof d === 'object') {
+              let date = d.date || d.Date || d.day || d.Day || `D${i+1}`;
+              if (typeof date === 'string' && date.includes('T')) {
+                date = date.split('T')[0];
+              }
+              let val;
+              for (const k of valueKeys) { if (d[k] !== undefined) { val = d[k]; break; } }
+              if (val === undefined) val = d.value || d.Value || 0;
+              out.push({ date: String(date), value: Number(typeof val === 'string' ? parseFloat(val) : val) || 0 });
+            } else {
+              out.push({ date: `D${i+1}`, value: Number(d) || 0 });
+            }
+          });
+        } else if (typeof raw === 'object') {
+          Object.entries(raw).forEach(([k, v]) => {
+            out.push({ date: String(k), value: Number(typeof v === 'string' ? parseFloat(v) : v) || 0 });
+          });
+        }
+        return out;
+      },
+      drawLineChart(canvasEl, series, color) {
+        try {
+          if (!canvasEl || !series || series.length === 0) return;
+          const el = canvasEl;
+          const parent = el.parentElement;
+          const w = Math.max(400, parent.clientWidth - 24);
+          el.width = w; el.height = 220;
+          const ctx = el.getContext('2d');
+          ctx.clearRect(0,0,el.width,el.height);
+          const padding = { left: 48, right: 10, top: 16, bottom: 40 };
+          const plotW = el.width - padding.left - padding.right;
+          const plotH = el.height - padding.top - padding.bottom;
+          const values = series.map(s => s.value);
+          const minV = Math.min(...values, 0);
+          const maxV = Math.max(...values, 1);
+          const yRange = (maxV - minV) || 1;
+          const stepX = plotW / Math.max(series.length - 1, 1);
+          const yScale = plotH / yRange;
+          ctx.strokeStyle = '#ddd';
+          ctx.beginPath();
+          ctx.moveTo(padding.left, padding.top + plotH);
+          ctx.lineTo(padding.left + plotW, padding.top + plotH);
+          ctx.moveTo(padding.left, padding.top);
+          ctx.lineTo(padding.left, padding.top + plotH);
+          ctx.stroke();
+
+          const yTicks = 5;
+          const yStep = yRange / yTicks;
+          ctx.font = '12px Noto Sans SC';
+          for (let i = 0; i <= yTicks; i++) {
+            const val = minV + i * yStep;
+            const y = padding.top + plotH - (val - minV) * yScale;
+            ctx.strokeStyle = '#f2f2f2';
+            ctx.beginPath();
+            ctx.moveTo(padding.left, y);
+            ctx.lineTo(padding.left + plotW, y);
+            ctx.stroke();
+            const label = yStep >= 1 ? Math.round(val).toString() : val.toFixed(2);
+            ctx.fillStyle = '#999';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, padding.left - 6, y);
+          }
+
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          series.forEach((s, i) => {
+            const x = padding.left + i * stepX;
+            const y = padding.top + plotH - (s.value - minV) * yScale;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          });
+          ctx.stroke();
+
+          ctx.fillStyle = color;
+          series.forEach((s, i) => {
+            const x = padding.left + i * stepX;
+            const y = padding.top + plotH - (s.value - minV) * yScale;
+            ctx.beginPath();
+            ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          const minSpacing = 60;
+          const stepLabel = Math.max(1, Math.ceil(minSpacing / stepX));
+          ctx.fillStyle = '#666';
+          ctx.font = '12px Noto Sans SC';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          for (let i = 0; i < series.length; i += stepLabel) {
+            const x = padding.left + i * stepX;
+            const y = padding.top + plotH + 6;
+            const text = String(series[i].date);
+            ctx.fillText(text, x, y);
+          }
+        } catch (e) {}
       },
       // 切换店铺营业状态
       async toggleShopOpen(val) {

@@ -333,3 +333,69 @@ func (h *ShopHandler) GetTodayOrderCountByShopID(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"count": count})
 }
+
+func (h *ShopHandler) GetTodayRevenueByShopID(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var request struct {
+		ShopID int `json:"shop_id"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	revenue, err := h.svc.GetTodayRevenueByShopID(request.ShopID)
+	//同时写入到日志中去
+	h.svc.WriteTodayRevenueByShopID(request.ShopID, revenue)
+	logger.Info("revenue", revenue)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"revenue": revenue})
+}
+
+func (h *ShopHandler) GetAllOrderCountByShopID(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var request struct {
+		ShopID int `json:"shop_id"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	count, err := h.svc.GetAllOrderCountByShopID(request.ShopID)
+	logger.Info("count", count)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"count": count})
+}
+
+// GetAllRevenueByShopID 获取指定店铺的所有营业额记录
+func (h *ShopHandler) GetAllRevenueByShopID(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var request struct {
+		ShopID int `json:"shop_id"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	revenue, err := h.svc.GetAllRevenueByShopID(request.ShopID)
+	logger.Info("revenue", revenue)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"revenue": revenue})
+}
