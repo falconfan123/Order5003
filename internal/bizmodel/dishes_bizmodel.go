@@ -2,6 +2,11 @@ package bizmodel
 
 import "github.com/shopspring/decimal"
 
+const (
+	DishStatusAvailable = 1
+	DishStatusStopped   = 0
+)
+
 type Dishes struct {
 	DishID      int             `json:"dish_id"`               // 对应前端dish_id（必传）
 	ShopID      int             `json:"shop_id"`               // 对应前端shop_id（必传）

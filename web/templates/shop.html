@@ -417,7 +417,7 @@
             class="status-dot"
             :style="{background: shopOpen ? '#52c41a' : '#ff4d4f'}"
           ></div>
-          <span>{{ shopOpen ? '营业中' : '打烊' }}</span>
+          <span>{{ currentShop?.status === 1 ? '营业中' : '打烊' }}</span>
           <el-switch v-model="shopOpen" @change="toggleShopOpen" />
         </div>
 
@@ -622,6 +622,11 @@
         <section v-if="activeMenu === 'stats'">
           <div class="section-header">
             <div class="section-title">营收概览</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <el-button size="small" @click="refreshStats" :loading="statLoading">
+                <el-icon><Refresh /></el-icon>刷新
+              </el-button>
+            </div>
           </div>
 
           <!-- 加载中 -->
@@ -707,18 +712,20 @@
       return {
         // 登录相关
         loginForm: {
-          username: '',
+          username: 'admin',
           password: 'admin'
         },
         loginLoading: false,
         // 核心状态
         currentShop: null,
-        shopOpen: true,
+        shopOpen: false,
         activeMenu: 'orders',
         // 订单相关
         orderStatusFilter: 'all',
         orders: [],
         orderItemsMap: {},
+        usernamesMap: {},
+        addressesMap: {},
         orderLoading: false,
         // 菜单/菜品相关
         dishes: [],
@@ -727,6 +734,7 @@
         menuLoading: false,
         // 营收相关
         statLoading: false,
+        statsTodayOrderCount: 0,
         // 操作加载状态
         operLoading: false,
         // 编辑弹窗
@@ -747,8 +755,8 @@
         if (!this.currentShop || this.orderLoading) return [];
         return this.orders.map(o => ({
           ...o,
-          user_name: o.user_name || '未知用户',
-          address: o.address || '未知地址',
+          user_name: this.usernamesMap[o.user_id || o.UserID] || '未知用户',
+          address: this.addressesMap[o.user_id || o.UserID] || '未知地址',
           deliverer_name: '',
           deliverer_phone: '',
           items: this.orderItemsMap[o.order_id || o.OrderID] || []
@@ -773,7 +781,7 @@
       },
       // 今日订单数
       todayOrderCount() {
-        return this.orders.length;
+        return this.statsTodayOrderCount || 0;
       },
       // 今日营业额
       todayRevenue() {
@@ -791,7 +799,7 @@
       },
       // 店铺状态文本
       shopStatusText() {
-        const status = this.currentShop?.status || this.currentShop?.Status || (this.shopOpen ? 1 : 0);
+        const status = this.currentShop?.status;
         return status === 1 ? '营业中' : '休息中';
       },
       // 店铺类型文本
@@ -873,10 +881,10 @@
             manager_name: shopDetail.manager_name || shopDetail.ManagerName || name,
             delivery_fee: 0,
             business_hours: '',
-            status: shopDetail.status || shopDetail.Status || 1,
+            status: null,
             type: shopDetail.type || shopDetail.Type || 0
           };
-          this.shopOpen = this.currentShop.status === 1;
+          // 初始状态不依赖店铺详情，等待 /shop/getshopstatusbyshopid 结果
 
           // 4. 再补全店铺元信息（配送费、营业时间、状态、类型）
           await this.fetchShopMeta(shopId);
@@ -916,12 +924,20 @@
           // 2. 获取订单菜品明细
           await this.fetchOrderDishesForOrders();
 
-          // 3. 加载营收数据
+          // 3. 获取订单用户姓名
+          await this.fetchUsernamesForOrders();
+
+          // 4. 获取订单用户地址
+          await this.fetchAddressesForOrders();
+
+          // 5. 加载营收数据
           this.loadStats();
         } catch (e) {
           ElementPlus.ElMessage.error('订单加载失败：' + e.message);
           this.orders = [];
           this.orderItemsMap = {};
+          this.usernamesMap = {};
+          this.addressesMap = {};
         } finally {
           this.orderLoading = false;
         }
@@ -960,6 +976,42 @@
         } catch (e) {
           ElementPlus.ElMessage.warning('订单菜品明细加载失败：' + e.message);
           this.orderItemsMap = {};
+        }
+      },
+      // 加载订单用户地址
+      async fetchAddressesForOrders() {
+        const ids = [...new Set(this.orders.map(o => o.user_id || o.UserID).filter(v => v !== undefined && v !== null))];
+        if (!ids.length) { this.addressesMap = {}; return; }
+        try {
+          const tasks = ids.map(id => this.request('/user/getuseraddressbyuserid', {
+            method: 'POST',
+            body: JSON.stringify({ user_id: id })
+          }).then(res => ({ id, address: res?.address || res?.MainAddress || '未知地址' })).catch(() => ({ id, address: '未知地址' })));
+          const results = await Promise.all(tasks);
+          const map = {};
+          results.forEach(({ id, address }) => { map[id] = address; });
+          this.addressesMap = map;
+        } catch (e) {
+          ElementPlus.ElMessage.warning('用户地址加载失败：' + e.message);
+          this.addressesMap = {};
+        }
+      },
+      // 加载订单用户姓名
+      async fetchUsernamesForOrders() {
+        const ids = [...new Set(this.orders.map(o => o.user_id || o.UserID).filter(v => v !== undefined && v !== null))];
+        if (!ids.length) { this.usernamesMap = {}; return; }
+        try {
+          const tasks = ids.map(id => this.request('/user/getusernamebyuserid', {
+            method: 'POST',
+            body: JSON.stringify({ user_id: id })
+          }).then(res => ({ id, username: res?.username || res?.UserName || '未知用户' })).catch(() => ({ id, username: '未知用户' })));
+          const results = await Promise.all(tasks);
+          const map = {};
+          results.forEach(({ id, username }) => { map[id] = username; });
+          this.usernamesMap = map;
+        } catch (e) {
+          ElementPlus.ElMessage.warning('用户姓名加载失败：' + e.message);
+          this.usernamesMap = {};
         }
       },
       // 加载菜单
@@ -1055,11 +1107,12 @@
           // 营业时间
           this.currentShop.business_hours = hoursRes?.business_hours || hoursRes?.BusinessHours || '';
           // 店铺状态
-          const status = feeRes?.status || feeRes?.Status || 1;
+          const status = statusRes?.status ?? statusRes?.Status ?? 0; 
           this.currentShop.status = status;
           this.shopOpen = status === 1;
           // 店铺类型
           this.currentShop.type = typeRes?.type || typeRes?.Type || 0;
+          console.log('status接口返回值：', statusRes); // 加日志，看是否真的返回status=0
         } catch (e) {
           ElementPlus.ElMessage.warning('店铺元信息加载失败：' + e.message);
         }
@@ -1068,12 +1121,12 @@
       async loadStats() {
         this.statLoading = true;
         try {
-          // 可扩展：调用专门的营收统计接口
-          // const statRes = await this.request('/shop/getstats', {
-          //   method: 'POST',
-          //   body: JSON.stringify({ shop_id: this.currentShop.shop_id })
-          // });
-          // 暂用订单数据计算
+          const res = await this.request('/shop/gettodayordercountbyshopid', {
+            method: 'POST',
+            body: JSON.stringify({ shop_id: this.currentShop.shop_id })
+          });
+          const count = res?.count ?? res?.Count ?? 0;
+          this.statsTodayOrderCount = Number(count) || 0;
         } catch (e) {
           ElementPlus.ElMessage.warning('营收数据加载失败：' + e.message);
         } finally {
@@ -1095,10 +1148,9 @@
           });
 
           this.currentShop.status = status;
-          this.shopOpen = val;
           ElementPlus.ElMessage.success(val ? '已设置为营业中' : '已设置为打烊');
         } catch (e) {
-          this.shopOpen = !val; // 回滚
+          this.shopOpen = !val ? 0 : 1;; // 回滚
           ElementPlus.ElMessage.error('状态更新失败：' + e.message);
         }
       },
@@ -1213,6 +1265,11 @@
         await this.loadOrders();
         ElementPlus.ElMessage.success('订单已刷新');
       },
+      // 刷新营收数据
+      async refreshStats() {
+        await this.loadOrders();
+        ElementPlus.ElMessage.success('营收数据已刷新');
+      },
       async canModifyMenu() {
         if (!this.currentShop) return false;
         const status = this.currentShop?.status || this.currentShop?.Status || (this.shopOpen ? 1 : 0);
@@ -1255,13 +1312,17 @@
         this.operLoading = true;
         try {
           const newStatus = dish.status === 1 ? 0 : 1;
-          await this.request('/dish/updatestatus', {
-            method: 'POST',
-            body: JSON.stringify({
-              DishID: dish.dish_id,
-              Status: newStatus
-            })
-          });
+          if (newStatus === 0) {
+            await this.request('/shop/stopdish', {
+              method: 'POST',
+              body: JSON.stringify({ dish_id: dish.dish_id })
+            });
+          } else {
+            await this.request('/shop/startdish', {
+              method: 'POST',
+              body: JSON.stringify({ dish_id: dish.dish_id })
+            });
+          }
 
           // 刷新菜品
           await this.loadDishesForMenu(this.selectedMenuId);

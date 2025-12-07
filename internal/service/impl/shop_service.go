@@ -4,7 +4,9 @@ import (
 	"Order5003/internal/bizmodel"
 	"Order5003/internal/dao"
 	"Order5003/internal/logger"
+	"Order5003/internal/model"
 	"errors"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -162,4 +164,53 @@ func (s *GormStore) GetShopStatusByShopID(shopID int) (int, error) {
 		return 0, errors.New("shop not found")
 	}
 	return int(e.Status), nil
+}
+
+// StopDish 停售指定菜品
+func (s *GormStore) StopDish(dishID int) error {
+	if err := dao.UpdateDishStatus(s.db, dishID, int(bizmodel.DishStatusStopped)); err != nil {
+		return errors.New("update dish status failed")
+	}
+	return nil
+}
+
+// StartDish 上架指定菜品
+func (s *GormStore) StartDish(dishID int) error {
+	if err := dao.UpdateDishStatus(s.db, dishID, int(bizmodel.DishStatusAvailable)); err != nil {
+		return errors.New("update dish status failed")
+	}
+	return nil
+}
+
+// GetTodayOrderCountByShopID 获取指定店铺的今日订单数
+func (s *GormStore) GetTodayOrderCountByShopID(shopID int) (int, error) {
+	count, err := dao.GetTodayOrderCountByShopID(s.db, shopID)
+	if err != nil {
+		return 0, errors.New("get today order count failed")
+	}
+	return count, nil
+}
+
+// WriteTodayOrderCountByShopID 写入指定店铺的今日订单数
+func (s *GormStore) WriteTodayOrderCountByShopID(shopID int, count int) error {
+	//先看是否已经存在 如果已经存在 则只变更count字段
+	existing, err := dao.GetShopDailyRevenueByShopIDAndDate(s.db, shopID, time.Now().Truncate(24*time.Hour))
+	if err != nil {
+		return errors.New("get shop daily revenue failed")
+	}
+	if existing.ID > 0 {
+		if err := dao.UpdateShopDailyRevenueCount(s.db, existing, count); err != nil {
+			return errors.New("update shop daily revenue count failed")
+		}
+		return nil
+	}
+	//如果不存在 则插入新记录
+	if err := dao.CreateShopDailyRevenue(s.db, model.ShopDailyRevenue{
+		ShopID:     int64(shopID),
+		Date:       time.Now().Truncate(24 * time.Hour),
+		OrderCount: count,
+	}); err != nil {
+		return errors.New("create shop daily revenue failed")
+	}
+	return nil
 }

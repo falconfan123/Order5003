@@ -268,3 +268,68 @@ func (h *ShopHandler) GetShopStatusByShopID(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"status": status})
 }
+
+func (h *ShopHandler) StopDish(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var request struct {
+		DishID int `json:"dish_id"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	err := h.svc.StopDish(request.DishID)
+	logger.Info("err", err)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Dish stopped"})
+}
+
+func (h *ShopHandler) StartDish(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var request struct {
+		DishID int `json:"dish_id"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	err := h.svc.StartDish(request.DishID)
+	logger.Info("err", err)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Dish started"})
+}
+
+func (h *ShopHandler) GetTodayOrderCountByShopID(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var request struct {
+		ShopID int `json:"shop_id"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	count, err := h.svc.GetTodayOrderCountByShopID(request.ShopID)
+	//同时写入到日志中去
+	h.svc.WriteTodayOrderCountByShopID(request.ShopID, count)
+	logger.Info("count", count)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"count": count})
+}

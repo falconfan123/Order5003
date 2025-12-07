@@ -68,3 +68,8 @@ func GetDishesByIDs(db *gorm.DB, dishIDs []int) ([]model.DishEntity, error) {
 	}
 	return dishes, nil
 }
+
+// UpdateDishStatus 更新菜品状态
+func UpdateDishStatus(db *gorm.DB, dishID int, status int) error {
+	return db.Model(&model.DishEntity{}).Where("dish_id = ?", dishID).Update("status", status).Error
+}

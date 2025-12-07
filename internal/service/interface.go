@@ -37,11 +37,21 @@ type ShopService interface {
 	GetDishesByOrderID(orderID int) ([]bizmodel.Dishes, error)
 	AcceptOrder(orderID int) error
 	WaitingForDeliveryOrder(orderID int) error
+	//停售菜品
+	StopDish(dishID int) error
+	//上架商品
+	StartDish(dishID int) error
+	//今日订单数
+	GetTodayOrderCountByShopID(shopID int) (int, error)
+	//写入今日订单数
+	WriteTodayOrderCountByShopID(shopID int, count int) error
 }
 
 type UserService interface {
 	GetUserByUsername(username string) (bizmodel.User, error)
 	GetUserByID(id int) (bizmodel.User, error)
+	GetUsernameByUserID(userID int) (string, error)
+	GetUserAddressByUserID(userID int) (string, error)
 }
 
 type DelivererService interface {

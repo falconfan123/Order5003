@@ -26,4 +26,10 @@ func RegisterShopRoutes(r *gin.Engine, h *handlers.ShopHandler) {
 	g.POST("/acceptorder", func(c *gin.Context) { h.AcceptOrder(c) })
 	// 完成订单
 	g.POST("/watingfordeliveryorder", func(c *gin.Context) { h.WaitingForDeliveryOrder(c) })
+	//停售菜品
+	g.POST("/stopdish", func(c *gin.Context) { h.StopDish(c) })
+	//上架商品
+	g.POST("/startdish", func(c *gin.Context) { h.StartDish(c) })
+	//今日订单数
+	g.POST("/gettodayordercountbyshopid", func(c *gin.Context) { h.GetTodayOrderCountByShopID(c) })
 }

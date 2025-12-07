@@ -5,6 +5,7 @@ import (
 	"Order5003/internal/model"
 	"runtime"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -54,4 +55,15 @@ func ListOrdersByShopID(db *gorm.DB, shopID int) ([]model.OrderEntity, error) {
 
 func UpdateShopStatus(db *gorm.DB, e *model.ShopEntity, status int) error {
 	return db.Model(&model.ShopEntity{}).Where("shop_id = ?", e.ShopID).Update("status", status).Error
+}
+
+// GetTodayOrderCountByShopID 获取指定店铺的今日订单数
+func GetTodayOrderCountByShopID(db *gorm.DB, shopID int) (int, error) {
+	var count int64
+	if err := db.Debug().Model(&model.OrderEntity{}).
+		Where("shop_id = ? AND created_at >= ? AND created_at < ?", shopID, time.Now().Truncate(24*time.Hour), time.Now().Truncate(24*time.Hour).Add(24*time.Hour)).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return int(count), nil
 }
