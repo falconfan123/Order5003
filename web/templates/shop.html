@@ -1214,18 +1214,25 @@
           if (!canvasEl || !series || series.length === 0) return;
           const el = canvasEl;
           const parent = el.parentElement;
-          const w = Math.max(400, parent.clientWidth - 24);
-          el.width = w; el.height = 220;
+          const cssW = Math.max(400, parent.clientWidth - 24);
+          const cssH = 220;
+          const ratio = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+          el.style.width = cssW + 'px';
+          el.style.height = cssH + 'px';
+          el.width = Math.floor(cssW * ratio);
+          el.height = Math.floor(cssH * ratio);
           const ctx = el.getContext('2d');
-          ctx.clearRect(0,0,el.width,el.height);
-          const padding = { left: 48, right: 10, top: 16, bottom: 40 };
-          const plotW = el.width - padding.left - padding.right;
-          const plotH = el.height - padding.top - padding.bottom;
+          ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+          ctx.clearRect(0, 0, cssW, cssH);
+          const padding = { left: 56, right: 24, top: 16, bottom: 46 };
+          const plotW = cssW - padding.left - padding.right;
+          const plotH = cssH - padding.top - padding.bottom;
+          const xRight = padding.left + plotW - 8; // 右侧预留像素，避免贴边
           const values = series.map(s => s.value);
           const minV = Math.min(...values, 0);
           const maxV = Math.max(...values, 1);
           const yRange = (maxV - minV) || 1;
-          const stepX = plotW / Math.max(series.length - 1, 1);
+          const stepX = series.length > 1 ? (plotW / (series.length - 1)) : 0;
           const yScale = plotH / yRange;
           ctx.strokeStyle = '#ddd';
           ctx.beginPath();
@@ -1257,7 +1264,8 @@
           ctx.lineWidth = 2;
           ctx.beginPath();
           series.forEach((s, i) => {
-            const x = padding.left + i * stepX;
+            let x = padding.left + i * stepX;
+            if (x > xRight) x = xRight;
             const y = padding.top + plotH - (s.value - minV) * yScale;
             if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
           });
@@ -1265,10 +1273,11 @@
 
           ctx.fillStyle = color;
           series.forEach((s, i) => {
-            const x = padding.left + i * stepX;
+            let x = padding.left + i * stepX;
+            if (x > xRight) x = xRight;
             const y = padding.top + plotH - (s.value - minV) * yScale;
             ctx.beginPath();
-            ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+            ctx.arc(x, y, 3, 0, Math.PI * 2);
             ctx.fill();
           });
 
@@ -1279,7 +1288,9 @@
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
           for (let i = 0; i < series.length; i += stepLabel) {
-            const x = padding.left + i * stepX;
+            let x = padding.left + i * stepX;
+            if (x > xRight) x = xRight;
+            if (x < padding.left) x = padding.left;
             const y = padding.top + plotH + 6;
             const text = String(series[i].date);
             ctx.fillText(text, x, y);
