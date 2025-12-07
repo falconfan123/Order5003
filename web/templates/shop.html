@@ -342,6 +342,11 @@
       margin-top: 4px;
     }
 
+    /* 头像下拉：店铺资料 / 退出登录 居中 */
+    .el-dropdown-menu__item {
+      justify-content: center;
+    }
+
     /* 加载中样式 */
     .loading-wrap {
       text-align: center;
@@ -433,7 +438,7 @@
             <el-dropdown-menu>
               <el-dropdown-item command="profile">店铺资料</el-dropdown-item>
               <el-dropdown-item divided command="logout" style="color:#f56c6c;">
-                <el-icon><SwitchButton /></el-icon>退出登录
+                退出登录
               </el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -465,7 +470,7 @@
           :class="{active: activeMenu === 'stats'}"
           @click="activeMenu = 'stats'"
         >
-          <el-icon><TrendCharts /></el-icon><span>营收概览</span>
+          <el-icon><Histogram /></el-icon><span>营收概览</span>
         </div>
       </aside>
 
