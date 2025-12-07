@@ -1213,8 +1213,28 @@
         await this.loadOrders();
         ElementPlus.ElMessage.success('订单已刷新');
       },
+      async canModifyMenu() {
+        if (!this.currentShop) return false;
+        const status = this.currentShop?.status || this.currentShop?.Status || (this.shopOpen ? 1 : 0);
+        if (status === 0) return true;
+        try {
+          const data = await this.request(`/shop/getordersbyshopid?shop_id=${encodeURIComponent(this.currentShop.shop_id)}`);
+          const list = Array.isArray(data) ? data : (data ? [data] : []);
+          const hasActive = list.some(o => [1,2,4,8].includes(Number(o.status || o.Status)));
+          if (hasActive) {
+            await ElementPlus.ElMessageBox.alert('当前有订单进行中，无法修改菜单，请等待打烊后更改', '提示', { type: 'warning' });
+            return false;
+          }
+          return true;
+        } catch (e) {
+          await ElementPlus.ElMessageBox.alert('订单状态校验失败，请稍后重试', '提示', { type: 'error' });
+          return false;
+        }
+      },
       // 新增菜品
-      addDish() {
+      async addDish() {
+        const ok = await this.canModifyMenu();
+        if (!ok) return;
         // 重置编辑表单
         this.editForm = {
           dish_id: null,
@@ -1229,6 +1249,8 @@
       // 切换菜品状态
       async toggleDishStatus(dish) {
         if (!dish || !this.currentShop) return;
+        const ok = await this.canModifyMenu();
+        if (!ok) return;
 
         this.operLoading = true;
         try {
@@ -1251,7 +1273,9 @@
         }
       },
       // 编辑菜品
-      editDish(dish) {
+      async editDish(dish) {
+        const ok = await this.canModifyMenu();
+        if (!ok) return;
         this.editForm = {
           dish_id: dish.dish_id,
           shop_id: dish.shop_id,
