@@ -1,13 +1,12 @@
 package handlers
 
 import (
-	"net/http"
+	"Order5003/internal/logger"
+	"Order5003/internal/service"
 	"strconv"
 
-	"Order5003/internal/bizmodel"
-	"Order5003/internal/service"
-
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type MenuHandler struct {
@@ -18,84 +17,39 @@ func NewMenuHandler(svc service.MenuService) *MenuHandler {
 	return &MenuHandler{svc: svc}
 }
 
-func (h *MenuHandler) GetAllMenuItems(c *gin.Context) {
-	if c.Request.Method != http.MethodGet {
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+func (h *MenuHandler) GetMenuByShopID(c *gin.Context) {
+	if c.Request.Method != "POST" {
+		c.JSON(405, gin.H{"error": "method not allowed"})
 		return
 	}
-	items := h.svc.GetAllMenuItems()
-	c.JSON(http.StatusOK, items)
+	shopID, err := strconv.Atoi(c.PostForm("shop_id"))
+	if err != nil {
+		c.JSON(400, gin.H{"error": "shop_id is required"})
+		return
+	}
+	menu, err := h.svc.GetMenuByShopID(c, shopID)
+	logger.Info("GetMenuByShopID", zap.Int("shopID", shopID), zap.Any("menu", menu))
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, menu)
 }
 
-func (h *MenuHandler) GetMenuItemByID(c *gin.Context) {
-	if c.Request.Method != http.MethodGet {
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+func (h *MenuHandler) GetDishesByMenuID(c *gin.Context) {
+	if c.Request.Method != "POST" {
+		c.JSON(405, gin.H{"error": "method not allowed"})
 		return
 	}
-	idStr := c.Query("id")
-	id, err := strconv.Atoi(idStr)
+	menuID, err := strconv.Atoi(c.PostForm("menu_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid menu item ID"})
+		c.JSON(400, gin.H{"error": "menu_id is required"})
 		return
 	}
-	item, err := h.svc.GetMenuItemByID(id)
+	dishes, err := h.svc.GetDishesByMenuID(c, menuID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, item)
-}
-
-func (h *MenuHandler) CreateMenuItem(c *gin.Context) {
-	if c.Request.Method != http.MethodPost {
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
-		return
-	}
-	var item bizmodel.Menu
-	if err := c.ShouldBindJSON(&item); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
-}
-
-func (h *MenuHandler) UpdateMenuItem(c *gin.Context) {
-	if c.Request.Method != http.MethodPut {
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
-		return
-	}
-	idStr := c.Query("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid menu item ID"})
-		return
-	}
-	var item bizmodel.Menu
-	if err := c.ShouldBindJSON(&item); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
-	updatedItem, err := h.svc.UpdateMenuItem(id, item)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, updatedItem)
-}
-
-func (h *MenuHandler) DeleteMenuItem(c *gin.Context) {
-	if c.Request.Method != http.MethodDelete {
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
-		return
-	}
-	idStr := c.Query("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid menu item ID"})
-		return
-	}
-	if err := h.svc.DeleteMenuItem(id); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	c.JSON(200, dishes)
 }

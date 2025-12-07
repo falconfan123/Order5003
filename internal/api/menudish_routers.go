@@ -9,6 +9,7 @@ import (
 func RegisterMenuDishRoutes(r *gin.Engine, h *handlers.MenuDishHandler) {
 	menudishGroup := r.Group("/menudish")
 	{
+		//得到shopid下的所有菜品
 		menudishGroup.POST("/getmenudishesbyid", func(c *gin.Context) {
 			h.GetMenuDishesByShopID(c)
 		})

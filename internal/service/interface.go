@@ -4,15 +4,12 @@ import (
 	"Order5003/internal/bizmodel"
 	"context"
 
-	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
 
 type MenuService interface {
-	GetAllMenuItems() []bizmodel.Menu
-	GetMenuItemByID(id int) (bizmodel.Menu, error)
-	UpdateMenuItem(id int, item bizmodel.Menu) (bizmodel.Menu, error)
-	DeleteMenuItem(id int) error
+	GetMenuByShopID(ctx context.Context, shopID int) ([]bizmodel.Menu, error)
+	GetDishesByMenuID(ctx context.Context, menuID int) ([]bizmodel.Dishes, error)
 }
 
 type OrderService interface {
@@ -31,9 +28,11 @@ type ShopService interface {
 	GetAllShops() ([]bizmodel.Shop, error)
 	GetMenuDishesByShopID(shopID int) ([]bizmodel.Dishes, error)
 	GetShopNameByShopID(shopID int) (string, error)
-	GetDeliveryFeeByShopID(shopID int) (decimal.Decimal, error)
+	GetDeliveryFeeByShopID(shopID int) (float64, error)
 	GetBusinessHoursByShopID(shopID int) (string, error)
 	GetShopTypeByShopID(shopID int) (int, error)
+	//查看店铺状态
+	GetShopStatusByShopID(shopID int) (int, error)
 	UpdateShopStatus(shopID int, status int) (int, error)
 	GetDishesByOrderID(orderID int) ([]bizmodel.Dishes, error)
 	AcceptOrder(orderID int) error

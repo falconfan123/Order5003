@@ -6,7 +6,6 @@ import (
 	"Order5003/internal/logger"
 	"errors"
 
-	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -18,8 +17,8 @@ func (s *GormStore) GetShopByName(name string) (bizmodel.Shop, error) {
 	return bizmodel.Shop{
 		ShopID:        e.ShopID,
 		ShopName:      e.ShopName,
-		DeliveryRange: e.DeliveryRange,
-		DeliveryFee:   e.DeliveryFee,
+		DeliveryRange: e.DeliveryRange.InexactFloat64(),
+		DeliveryFee:   e.DeliveryFee.InexactFloat64(),
 		BusinessHours: e.BusinessHours,
 		CreatedAt:     &e.CreatedAt,
 		Password:      e.Password,
@@ -37,8 +36,8 @@ func (s *GormStore) GetAllShops() ([]bizmodel.Shop, error) {
 		out = append(out, bizmodel.Shop{
 			ShopID:        e.ShopID,
 			ShopName:      e.ShopName,
-			DeliveryRange: e.DeliveryRange,
-			DeliveryFee:   e.DeliveryFee,
+			DeliveryRange: e.DeliveryRange.InexactFloat64(),
+			DeliveryFee:   e.DeliveryFee.InexactFloat64(),
 			BusinessHours: e.BusinessHours,
 			CreatedAt:     &e.CreatedAt,
 			Password:      e.Password,
@@ -79,12 +78,12 @@ func (s *GormStore) GetOrdersByShopID(shopID int) ([]bizmodel.Order, error) {
 }
 
 // GetDeliveryFeeByShopID 获取指定店铺的配送费
-func (s *GormStore) GetDeliveryFeeByShopID(shopID int) (decimal.Decimal, error) {
+func (s *GormStore) GetDeliveryFeeByShopID(shopID int) (float64, error) {
 	e, err := dao.GetShopByID(s.db, shopID)
 	if err != nil {
-		return decimal.Decimal{}, errors.New("shop not found")
+		return 0, errors.New("shop not found")
 	}
-	return e.DeliveryFee, nil
+	return e.DeliveryFee.InexactFloat64(), nil
 }
 
 // GetBusinessHoursByShopID 获取指定店铺的营业时间
@@ -154,4 +153,13 @@ func (s *GormStore) WaitingForDeliveryOrder(orderID int) error {
 		return errors.New("update order status failed")
 	}
 	return nil
+}
+
+// GetShopStatusByShopID 获取指定店铺的状态
+func (s *GormStore) GetShopStatusByShopID(shopID int) (int, error) {
+	e, err := dao.GetShopByID(s.db, shopID)
+	if err != nil {
+		return 0, errors.New("shop not found")
+	}
+	return int(e.Status), nil
 }

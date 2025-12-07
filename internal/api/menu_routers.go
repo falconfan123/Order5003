@@ -7,19 +7,9 @@ import (
 )
 
 func RegisterMenuRoutes(r *gin.Engine, h *handlers.MenuHandler) {
-    r.GET("/api/menu", func(c *gin.Context) { h.GetAllMenuItems(c) })
-    r.Any("/api/menu-item", func(c *gin.Context) {
-        switch c.Request.Method {
-        case "GET":
-            h.GetMenuItemByID(c)
-        case "POST":
-            h.CreateMenuItem(c)
-        case "PUT":
-            h.UpdateMenuItem(c)
-        case "DELETE":
-            h.DeleteMenuItem(c)
-        default:
-            c.Status(405)
-        }
-    })
+	g := r.Group("/menu")
+	//得到shopid下的所有菜单
+	g.POST("/getmenubyshopid", func(c *gin.Context) { h.GetMenuByShopID(c) })
+	//得到menuid下的所有菜品
+	g.POST("/getdishesbymenuid", func(c *gin.Context) { h.GetDishesByMenuID(c) })
 }

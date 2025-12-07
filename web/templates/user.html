@@ -355,8 +355,8 @@
                             <div style="font-weight:900;font-size:16px;margin-bottom:6px;">{{ shop.shop_name }}</div>
                             <div style="font-size:12px;color:#666;display:flex;align-items:center;gap:10px;">
                                 <span style="color:#ffaa00;font-weight:bold;"><el-icon><star-filled /></el-icon> 4.8</span>
-                                <span>{{ (shop.delivery_range||0).toFixed(1) }}km</span>
-                                <span>配送 ¥{{ (shop.delivery_fee||0).toFixed(0) }}</span>
+                                <span>{{ (parseFloat(shop.delivery_range) || 0).toFixed(1) }}km</span>
+                                <span>配送 ¥{{ (parseFloat(shop.delivery_fee) || 0).toFixed(0) }}</span>
                             </div>
                         </div>
                     </div>
@@ -502,23 +502,19 @@
                 // 商家 & 菜单
                 const fetchShops = () => {
                     loadingShops.value = true;
-                    if (USE_MOCK_DATA) { 
-                        setTimeout(() => { shops.value = MOCK_SHOPS; loadingShops.value = false; }, 300); 
-                    } else {
-                        fetch('/shop/getall', { 
-                            method: 'POST', 
-                            headers: {'Content-Type':'application/json'},
-                        })
-                        .then(res => {
-                            if (!res.ok) throw new Error('接口请求失败');
-                            return res.json();
-                        })
-                        .then(data => {
-                            shops.value = Array.isArray(data) ? data : [];
-                        })
-                        .catch(()=>ElMessage.error('获取商家失败'))
-                        .finally(()=>loadingShops.value=false);
-                    }
+                    fetch('/shop/getall', { 
+                        method: 'POST', 
+                        headers: {'Content-Type':'application/json'},
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('接口请求失败');
+                        return res.json();
+                    })
+                    .then(data => {
+                        shops.value = Array.isArray(data) ? data : [];
+                    })
+                    .catch(()=>ElMessage.error('获取商家失败'))
+                    .finally(()=>loadingShops.value=false);
                 };
 
                 const fetchMenu = (shopId) => {

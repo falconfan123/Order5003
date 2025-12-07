@@ -3,41 +3,44 @@ package impl
 import (
 	"Order5003/internal/bizmodel"
 	"Order5003/internal/dao"
-	"Order5003/internal/model"
+	"context"
 	"errors"
 )
 
-func (s *GormStore) GetAllMenuItems() []bizmodel.Menu {
-	list, err := dao.ListDishes(s.db)
+func (s *GormStore) GetMenuByShopID(ctx context.Context, shopID int) ([]bizmodel.Menu, error) {
+	list, err := dao.GetMenuByShopID(s.db, shopID)
 	if err != nil {
-		return []bizmodel.Menu{}
+		return []bizmodel.Menu{}, errors.New("menu not found")
 	}
 	out := make([]bizmodel.Menu, 0, len(list))
 	for _, e := range list {
-		out = append(out, bizmodel.Menu{MenuID: e.DishID})
+		out = append(out,
+			bizmodel.Menu{
+				MenuID:     e.MenuID,
+				ShopID:     e.ShopID,
+				MenuName:   e.MenuName,
+				Status:     int(e.Status),
+				CreateTime: e.CreateTime,
+				UpdateTime: e.UpdateTime,
+			})
 	}
-	return out
+	return out, nil
 }
 
-func (s *GormStore) GetMenuItemByID(id int) (bizmodel.Menu, error) {
-	e, err := dao.GetDishByDishID(s.db, id)
+func (s *GormStore) GetDishesByMenuID(ctx context.Context, menuID int) ([]bizmodel.Dishes, error) {
+	//先从menu_dishes取dishesid
+	Dishes_ids, err := dao.GetDishesIDByMenuID(s.db, menuID)
 	if err != nil {
-		return bizmodel.Menu{}, errors.New("menu item not found")
+		return []bizmodel.Dishes{}, errors.New("dishes not found")
 	}
-	return bizmodel.Menu{MenuID: e.DishID}, nil
-}
-
-func (s *GormStore) UpdateMenuItem(id int, updatedItem bizmodel.Menu) (bizmodel.Menu, error) {
-	e := &model.DishEntity{}
-	if _, err := dao.UpdateDish(s.db, id, e); err != nil {
-		return bizmodel.Menu{}, errors.New("menu item not found")
+	//再从Dishes_ids的每一项取出对应的Dish详情
+	out := make([]bizmodel.Dishes, 0, len(Dishes_ids))
+	for _, dishID := range Dishes_ids {
+		dish, err := dao.GetBothDishByDishID(ctx, s.db, dishID)
+		if err != nil {
+			return []bizmodel.Dishes{}, errors.New("dishes not found")
+		}
+		out = append(out, *dish)
 	}
-	return updatedItem, nil
-}
-
-func (s *GormStore) DeleteMenuItem(id int) error {
-	if err := dao.DeleteDish(s.db, id); err != nil {
-		return errors.New("menu item not found")
-	}
-	return nil
+	return out, nil
 }

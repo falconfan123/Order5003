@@ -341,6 +341,13 @@
       color: #999;
       margin-top: 4px;
     }
+
+    /* 加载中样式 */
+    .loading-wrap {
+      text-align: center;
+      padding: 40px 0;
+      color: #999;
+    }
   </style>
 </head>
 <body>
@@ -355,7 +362,7 @@
         <div class="brand-text">饭团商家端</div>
       </div>
       <p style="font-size:13px;color:#666;margin-bottom:16px;">
-        请输入 <b>商家账号</b> 和 <b>密码</b> 登录（当前为本地 Mock 数据，示例：admin / admin）
+        请输入商家账号和密码登录
       </p>
       <el-form :model="loginForm" @submit.prevent>
         <el-form-item>
@@ -381,6 +388,7 @@
           type="primary"
           style="width:100%;border-radius:20px;margin-top:4px;"
           @click="handleLogin"
+          :loading="loginLoading"
         >
           登录 / 进入商家工作台
         </el-button>
@@ -423,7 +431,7 @@
           </span>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="profile">店铺资料（Mock）</el-dropdown-item>
+              <el-dropdown-item command="profile">店铺资料</el-dropdown-item>
               <el-dropdown-item divided command="logout" style="color:#f56c6c;">
                 <el-icon><SwitchButton /></el-icon>退出登录
               </el-dropdown-item>
@@ -477,13 +485,19 @@
                 <el-option label="已完成" value="6"></el-option>
                 <el-option label="已取消（用户/商家）" value="cancel"></el-option>
               </el-select>
-              <el-button size="small" @click="refreshOrders">
+              <el-button size="small" @click="refreshOrders" :loading="orderLoading">
                 <el-icon><Refresh /></el-icon>刷新
               </el-button>
             </div>
           </div>
 
-          <div v-if="displayOrders.length === 0" style="text-align:center;color:#999;padding:40px 0;">
+          <!-- 加载中 -->
+          <div v-if="orderLoading" class="loading-wrap">
+            <el-icon size="40"><Loading /></el-icon>
+            <p>加载订单中...</p>
+          </div>
+
+          <div v-else-if="displayOrders.length === 0" style="text-align:center;color:#999;padding:40px 0;">
             <el-icon size="40"><DocumentRemove /></el-icon>
             <p>当前暂无订单</p>
           </div>
@@ -525,17 +539,17 @@
 
               <div style="margin-top:auto;display:flex;justify-content:flex-end;gap:6px;">
                 <template v-if="o.status === 2">
-                  <el-button size="small" type="primary" @click="acceptOrder(o)">接单</el-button>
-                  <el-button size="small" type="danger" plain @click="setStatus(o, 7)">拒单</el-button>
+                  <el-button size="small" type="primary" @click="acceptOrder(o)" :loading="operLoading">接单</el-button>
+                  <el-button size="small" type="danger" plain @click="setStatus(o, 7)" :loading="operLoading">拒单</el-button>
                 </template>
                 <template v-else-if="o.status === 8">
-                  <el-button size="small" type="success" @click="markWaitingForDelivery(o)">备餐完成</el-button>
+                  <el-button size="small" type="success" @click="markWaitingForDelivery(o)" :loading="operLoading">备餐完成</el-button>
                 </template>
                 <template v-else-if="o.status === 4">
                   <el-button size="small" disabled>待配送</el-button>
                 </template>
                 <template v-else-if="o.status === 5">
-                  <el-button size="small" type="success" @click="setStatus(o, 6)">确认送达</el-button>
+                  <el-button size="small" type="success" @click="setStatus(o, 6)" :loading="operLoading">确认送达</el-button>
                 </template>
               </div>
             </div>
@@ -546,12 +560,35 @@
         <section v-if="activeMenu === 'menu'">
           <div class="section-header">
             <div class="section-title">菜单管理</div>
-            <el-button type="primary" size="small" @click="addMockDish">
-              <el-icon><Plus /></el-icon>新增菜品（Mock）
-            </el-button>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span style="font-size:13px;color:#666;">共 {{ menus.length }} 张菜单</span>
+              <span style="font-size:13px;color:#333;">当前菜单：{{ currentMenuName || '未选择' }}</span>
+              <el-select v-model="selectedMenuId" size="small" style="width:180px;" placeholder="选择菜单" @change="onMenuChange" :disabled="menuLoading">
+                <el-option v-for="m in menus" :key="m.menu_id" :label="m.menu_name" :value="m.menu_id" />
+              </el-select>
+              <el-button type="primary" size="small" @click="addDish" :loading="operLoading">
+                <el-icon><Plus /></el-icon>新增菜品
+              </el-button>
+            </div>
           </div>
 
-          <div class="menu-grid">
+          <!-- 加载中 -->
+          <div v-if="menuLoading" class="loading-wrap">
+            <el-icon size="40"><Loading /></el-icon>
+            <p>加载菜单/菜品中...</p>
+          </div>
+
+          <div v-else-if="menus.length === 0" style="text-align:center;color:#999;padding:40px 0;">
+            <el-icon size="40"><FolderRemove /></el-icon>
+            <p>暂无菜单，请先创建菜单</p>
+          </div>
+
+          <div v-else-if="menuForShop.length === 0" style="text-align:center;color:#999;padding:40px 0;">
+            <el-icon size="40"><ShoppingCartEmpty /></el-icon>
+            <p>当前菜单暂无菜品</p>
+          </div>
+
+          <div class="menu-grid" v-else>
             <div
               v-for="d in menuForShop"
               :key="d.dish_id"
@@ -569,10 +606,12 @@
                   {{ d.status === 1 ? '在售' : '停售' }}
                 </el-tag>
                 <div style="display:flex;gap:6px;">
-                  <el-button size="small" text @click="toggleDishStatus(d)">
+                  <el-button size="small" text @click="toggleDishStatus(d)" :loading="operLoading">
                     {{ d.status === 1 ? '停售' : '上架' }}
                   </el-button>
-                  <el-button size="small" text type="primary" @click="editDish(d)">编辑</el-button>
+                  <el-button size="small" text type="primary" @click="editDish(d)">
+                    编辑
+                  </el-button>
                 </div>
               </div>
             </div>
@@ -582,9 +621,16 @@
         <!-- 营收概览 -->
         <section v-if="activeMenu === 'stats'">
           <div class="section-header">
-            <div class="section-title">营收概览（Mock）</div>
+            <div class="section-title">营收概览</div>
           </div>
-          <div class="stat-cards">
+
+          <!-- 加载中 -->
+          <div v-if="statLoading" class="loading-wrap">
+            <el-icon size="40"><Loading /></el-icon>
+            <p>加载营收数据中...</p>
+          </div>
+
+          <div class="stat-cards" v-else>
             <div class="stat-card">
               <div class="stat-label">今日订单数</div>
               <div class="stat-value">{{ todayOrderCount }}</div>
@@ -598,15 +644,11 @@
               <div class="stat-value">{{ pendingCount }}</div>
             </div>
           </div>
-          <p style="font-size:12px;color:#999;margin-top:10px;">
-            当前数据全部来自前端 Mock；后续可以改成从 <code>/shop/getordersbyshopid</code>、
-            <code>/shop/getdishes</code> 等接口计算。
-          </p>
         </section>
       </main>
     </div>
 
-    <!-- 菜品编辑弹窗（仅前端修改 MOCK 数据） -->
+    <!-- 菜品编辑弹窗 -->
     <el-dialog
       v-model="editDialogVisible"
       title="编辑菜品"
@@ -614,7 +656,7 @@
     >
       <el-form :model="editForm" label-width="80px">
         <el-form-item label="菜品ID">
-          <span>{{ editForm.dish_id }}</span>
+          <span>{{ editForm.dish_id || '新增菜品' }}</span>
         </el-form-item>
         <el-form-item label="菜名">
           <el-input
@@ -647,13 +689,10 @@
           </el-radio-group>
         </el-form-item>
       </el-form>
-      <div class="dialog-tip">
-        说明：这里的修改 <b>只作用于当前页面的 Mock 数据</b>，刷新页面后会恢复初始值。
-      </div>
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="editDialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="saveDishEdit">保 存</el-button>
+          <el-button type="primary" @click="saveDishEdit" :loading="operLoading">保 存</el-button>
         </span>
       </template>
     </el-dialog>
@@ -661,111 +700,36 @@
 </div>
 
 <script>
-  // 是否启用 Mock 数据（你以后要连真实后端，就把这个改成 false）
-  const USE_MOCK = true;
-
-  // ===== Mock 数据：结构按你数据库截图来的 =====
-
-  const MOCK_SHOPS = [
-    {
-      shop_id: 1,
-      shop_name: 'admin',
-      delivery_range: 8.0,
-      delivery_fee: 0.0,
-      business_hours: '00:00-24:00',
-      status: 1,
-      created_at: '2025-12-02 21:41:07',
-      password: 'admin',
-      type: 0,
-      manager_name: 'Admin商家'
-    },
-    {
-      shop_id: 2,
-      shop_name: '鲜味小馆',
-      delivery_range: 5.0,
-      delivery_fee: 2.0,
-      business_hours: '10:00-21:30',
-      status: 1,
-      created_at: '2025-11-17 21:41:07',
-      password: 'xianwei123',
-      type: 3,
-      manager_name: '鲜味老板'
-    }
-  ];
-
-  const MOCK_USERS = [
-    { user_id: 1, phone: '914123', user_name: 'admin', main_address: 'Hong Kong', created_at: '2025-12-02 23:26:21', password: 'admin' },
-    { user_id: 7, phone: '31341', user_name: 'user1', main_address: 'Beijing Chaoyang', created_at: '2025-12-03 10:15:30', password: 'user123456' },
-    { user_id: 8, phone: '123435', user_name: 'lisa', main_address: 'Shanghai Pudong', created_at: '2025-12-03 11:20:45', password: 'lisa666' },
-    { user_id: 9, phone: '51324124', user_name: 'mike', main_address: 'Guangzhou Tianhe', created_at: '2025-12-03 14:05:12', password: 'mike888' },
-    { user_id: 10, phone: '132412345', user_name: 'alice', main_address: 'Shenzhen Nanshan', created_at: '2025-12-03 16:30:00', password: 'alice2025' }
-  ];
-
-  // 骑手（deliverers）
-  const MOCK_DELIVERERS = [
-    { deliverer_id: 1, name: 'admin',  phone: '13800138000', status: 1, responsible_area: '全城覆盖', password: 'admin' },
-    { deliverer_id: 2, name: '张三',   phone: '13800138001', status: 1, responsible_area: '朝阳区建国路', password: 'zhangsan123' },
-    { deliverer_id: 3, name: '李四',   phone: '13800138002', status: 0, responsible_area: '海淀区中关村', password: 'lisi456' }
-  ];
-
-  // 订单（结构对齐 orders 表）
-  const MOCK_ORDERS = [
-    { order_id: 7,  user_id: 1,  shop_id: 1, deliverer_id: 2, total_amount: 101.00, status: 1, created_at: '2025-12-05 07:17:39' },
-    { order_id: 8,  user_id: 7,  shop_id: 1, deliverer_id: 2, total_amount: 43.00,  status: 2, created_at: '2025-12-05 21:21:20' },
-    { order_id: 9,  user_id: 8,  shop_id: 1, deliverer_id: 1, total_amount: 22.00,  status: 4, created_at: '2025-12-05 15:14:19' },
-    { order_id: 10, user_id: 9,  shop_id: 1, deliverer_id: 3, total_amount: 35.00,  status: 5, created_at: '2025-12-05 15:14:24' },
-    { order_id: 11, user_id: 10, shop_id: 1, deliverer_id: 2, total_amount: 8.00,   status: 6, created_at: '2025-12-05 15:14:49' },
-    { order_id: 12, user_id: 8,  shop_id: 1, deliverer_id: 2, total_amount: 22.00,  status: 8, created_at: '2025-12-05 15:15:41' }
-  ];
-
-  // 菜品（对齐 dishes 表）
-  const MOCK_DISHES = [
-    { dish_id: 1,  shop_id: 1, dish_name: '全麦面包', price: 5.00,  stock: 100, status: 1 },
-    { dish_id: 5,  shop_id: 1, dish_name: '鱼香肉丝', price: 32.00, stock: 45,  status: 1 },
-    { dish_id: 6,  shop_id: 1, dish_name: '番茄炒蛋', price: 22.00, stock: 60,  status: 1 },
-    { dish_id: 7,  shop_id: 1, dish_name: '招牌红烧肉', price: 48.00, stock: 30, status: 1 },
-    { dish_id: 9,  shop_id: 1, dish_name: '冬瓜排骨汤', price: 35.00, stock: 25, status: 1 },
-    { dish_id: 3,  shop_id: 3, dish_name: '牛奶',       price: 3.50, stock: 80,  status: 1 }
-  ];
-
-  // 订单菜明细（对齐 order_dishes 表）
-  const MOCK_ORDER_DISHES = [
-    { id: 1,  order_id: 7,  dish_id: 9,  dish_name: '冬瓜排骨汤', quantity: 1, unit_price: 35.00, subtotal: 35.00 },
-    { id: 2,  order_id: 7,  dish_id: 5,  dish_name: '鱼香肉丝',   quantity: 1, unit_price: 32.00, subtotal: 32.00 },
-    { id: 3,  order_id: 7,  dish_id: 7,  dish_name: '招牌红烧肉', quantity: 1, unit_price: 48.00, subtotal: 48.00 },
-
-    { id: 4,  order_id: 8,  dish_id: 6,  dish_name: '番茄炒蛋', quantity: 1, unit_price: 22.00, subtotal: 22.00 },
-    { id: 5,  order_id: 8,  dish_id: 1,  dish_name: '全麦面包', quantity: 1, unit_price: 5.00,  subtotal: 5.00 },
-
-    { id: 6,  order_id: 9,  dish_id: 6,  dish_name: '番茄炒蛋', quantity: 1, unit_price: 22.00, subtotal: 22.00 },
-
-    { id: 7,  order_id: 10, dish_id: 5,  dish_name: '鱼香肉丝', quantity: 1, unit_price: 32.00, subtotal: 32.00 },
-
-    { id: 8,  order_id: 11, dish_id: 1,  dish_name: '全麦面包', quantity: 1, unit_price: 5.00,  subtotal: 5.00 },
-    { id: 9,  order_id: 11, dish_id: 3,  dish_name: '牛奶',     quantity: 1, unit_price: 3.00,  subtotal: 3.00 },
-
-    { id: 10, order_id: 12, dish_id: 7,  dish_name: '招牌红烧肉', quantity: 1, unit_price: 48.00, subtotal: 48.00 },
-  ];
-
   const { createApp } = Vue;
 
   const App = {
     data() {
       return {
+        // 登录相关
         loginForm: {
-          username: 'admin',
+          username: '',
           password: 'admin'
         },
+        loginLoading: false,
+        // 核心状态
         currentShop: null,
         shopOpen: true,
         activeMenu: 'orders',
+        // 订单相关
         orderStatusFilter: 'all',
-        orders: [],     // 当前店铺的订单
-        dishes: [],     // 当前店铺的菜
-        users: MOCK_USERS,
-        deliverers: MOCK_DELIVERERS,
+        orders: [],
         orderItemsMap: {},
-        // ===== 新增：编辑菜品弹窗相关状态 =====
+        orderLoading: false,
+        // 菜单/菜品相关
+        dishes: [],
+        menus: [],
+        selectedMenuId: null,
+        menuLoading: false,
+        // 营收相关
+        statLoading: false,
+        // 操作加载状态
+        operLoading: false,
+        // 编辑弹窗
         editDialogVisible: false,
         editForm: {
           dish_id: null,
@@ -774,68 +738,102 @@
           price: 0,
           stock: 0,
           status: 1
-        }
+        },
+        
       };
     },
     computed: {
-      // 订单 + 用户 + 菜品明细 + 骑手，一起拼好给界面用
       displayOrders() {
-        if (!this.currentShop) return [];
-
-        const userMap = {};
-        this.users.forEach(u => { userMap[u.user_id] = u; });
-
-        const delivererMap = {};
-        this.deliverers.forEach(d => { delivererMap[d.deliverer_id] = d; });
-
-        const itemsByOrder = this.orderItemsMap || {};
-
-        let list = this.orders.map(o => {
-          const u = userMap[o.user_id] || {};
-          const d = delivererMap[o.deliverer_id] || {};
-          return {
-            ...o,
-            user_name: u.user_name || '未知用户',
-            address: u.main_address || '未知地址',
-            deliverer_name: d.name || '',
-            deliverer_phone: d.phone || '',
-            items: itemsByOrder[o.order_id] || []
-          };
+        if (!this.currentShop || this.orderLoading) return [];
+        return this.orders.map(o => ({
+          ...o,
+          user_name: o.user_name || '未知用户',
+          address: o.address || '未知地址',
+          deliverer_name: '',
+          deliverer_phone: '',
+          items: this.orderItemsMap[o.order_id || o.OrderID] || []
+        })).filter(o => {
+          if (this.orderStatusFilter === 'all') return true;
+          if (this.orderStatusFilter === 'cancel') {
+            return [3,7].includes(o.status || o.Status);
+          }
+          return (o.status || o.Status) === Number(this.orderStatusFilter);
         });
-
-        if (this.orderStatusFilter === 'all') {
-          return list;
-        } else if (this.orderStatusFilter === 'cancel') {
-          return list.filter(o => o.status === 3 || o.status === 7);
-        } else {
-          const target = Number(this.orderStatusFilter);
-          return list.filter(o => o.status === target);
-        }
       },
+      // 当前菜单的菜品
       menuForShop() {
-        if (!this.currentShop) return [];
+        if (!this.currentShop || this.menuLoading) return [];
         return this.dishes;
       },
+      // 当前选中菜单名称
+      currentMenuName() {
+        if (!this.selectedMenuId || this.menuLoading) return '';
+        const menu = this.menus.find(m => m.menu_id === this.selectedMenuId);
+        return menu ? (menu.menu_name || '未命名菜单') : '';
+      },
+      // 今日订单数
       todayOrderCount() {
         return this.orders.length;
       },
+      // 今日营业额
       todayRevenue() {
-        return this.orders.reduce((s, o) => s + (o.total_amount || 0), 0);
+        return this.orders.reduce((sum, o) => {
+          const amt = o.total_amount || o.TotalAmount || 0;
+          return sum + (typeof amt === 'string' ? parseFloat(amt) : amt);
+        }, 0);
       },
+      // 待处理订单数
       pendingCount() {
-        return this.orders.filter(o => [1,2,4,5,8].includes(o.status)).length;
+        return this.orders.filter(o => {
+          const status = o.status || o.Status;
+          return [1,2,4,5,8].includes(status);
+        }).length;
       },
+      // 店铺状态文本
       shopStatusText() {
-        const s = this.currentShop && typeof this.currentShop.status === 'number' ? this.currentShop.status : (this.shopOpen ? 1 : 0);
-        return s === 1 ? '营业中' : '休息中';
+        const status = this.currentShop?.status || this.currentShop?.Status || (this.shopOpen ? 1 : 0);
+        return status === 1 ? '营业中' : '休息中';
       },
+      // 店铺类型文本
       shopTypeText() {
-        const map = { 0: '全部', 1: '甜品奶茶', 2: '炸鸡汉堡', 3: '美味中餐', 4: '生活百货' };
-        const t = this.currentShop && typeof this.currentShop.type === 'number' ? this.currentShop.type : undefined;
-        return map[t] || '未知';
+        const typeMap = { 0: '全部', 1: '甜品奶茶', 2: '炸鸡汉堡', 3: '美味中餐', 4: '生活百货' };
+        const type = this.currentShop?.type || this.currentShop?.Type || 0;
+        return typeMap[type] || '未知';
       }
     },
     methods: {
+      // 统一请求封装（处理超时、错误）
+      async request(url, options = {}) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+
+        try {
+          const res = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+            headers: {
+              'Content-Type': 'application/json',
+              ...options.headers
+            }
+          });
+
+          clearTimeout(timeoutId);
+          
+          if (!res.ok) {
+            throw new Error(`接口请求失败：${res.status} ${res.statusText}`);
+          }
+
+          const data = await res.json();
+          return data;
+        } catch (e) {
+          clearTimeout(timeoutId);
+          if (e.name === 'AbortError') {
+            throw new Error('接口请求超时，请检查网络');
+          }
+          throw e;
+        }
+      },
+      // 登录
       async handleLogin() {
         const name = this.loginForm.username.trim();
         const pwd = this.loginForm.password.trim();
@@ -843,178 +841,268 @@
           ElementPlus.ElMessage.warning('请输入用户名和密码');
           return;
         }
+
+        this.loginLoading = true;
         try {
-          const res = await fetch('/shop/login', {
+          // 1. 登录接口
+          const loginRes = await this.request('/shop/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: name, password: pwd })
           });
-          if (!res.ok) {
-            throw new Error(res.status === 401 ? '用户名或密码错误' : '登录失败');
+
+          if (!loginRes.shop_id && !loginRes.ShopID) {
+            throw new Error('登录失败：未返回店铺ID');
           }
-          const data = await res.json();
-          let detail = null;
-          try {
-            const r2 = await fetch('/shop/getall', { method: 'POST' });
-            if (r2.ok) {
-              const list = await r2.json();
-              if (Array.isArray(list)) {
-                detail = list.find(s => s.shop_id === (data.shop_id || 0) || s.shop_name === (data.username || name));
-              }
-            }
-          } catch {}
-          if (detail) {
-            this.currentShop = { ...detail };
-          } else {
-            this.currentShop = {
-              shop_id: data.shop_id,
-              shop_name: data.username || name,
-              delivery_fee: 0,
-              business_hours: '',
-              status: 1
-            };
+
+          const shopId = loginRes.shop_id || loginRes.ShopID;
+
+          // 2. 获取店铺详情
+          const shopDetail = await this.request('/shop/getall', {
+            method: 'POST',
+            body: JSON.stringify({ shop_id: shopId })
+          });
+
+          if (!shopDetail) {
+            throw new Error('未查询到店铺信息');
           }
-          this.currentShop.manager_name = this.currentShop.manager_name || (data.username || name);
+
+          // 3. 先初始化店铺基础信息，避免在获取元信息时访问空对象
+          this.currentShop = {
+            shop_id: shopId,
+            shop_name: shopDetail.shop_name || shopDetail.ShopName || name,
+            manager_name: shopDetail.manager_name || shopDetail.ManagerName || name,
+            delivery_fee: 0,
+            business_hours: '',
+            status: shopDetail.status || shopDetail.Status || 1,
+            type: shopDetail.type || shopDetail.Type || 0
+          };
           this.shopOpen = this.currentShop.status === 1;
-          await this.fetchShopMeta(this.currentShop.shop_id);
-          this.loadOrders();
-          this.loadDishes();
+
+          // 4. 再补全店铺元信息（配送费、营业时间、状态、类型）
+          await this.fetchShopMeta(shopId);
+
+          // 5. 加载基础数据
+          await Promise.all([
+            this.loadOrders(),
+            this.loadMenus()
+          ]);
+
           ElementPlus.ElMessage.success('登录成功');
         } catch (e) {
-          ElementPlus.ElMessage.error(e.message || '登录失败');
+          ElementPlus.ElMessage.error({message: e.message || '登录失败', duration: 10000});
+        } finally {
+          this.loginLoading = false;
         }
       },
-      loadOrders() {
+      
+      // 加载订单
+      async loadOrders() {
         if (!this.currentShop) return;
-        fetch(`/shop/getordersbyshopid?shop_id=${encodeURIComponent(this.currentShop.shop_id)}`)
-          .then(res => res.ok ? res.json() : [])
-          .then(list => {
-            const arr = Array.isArray(list) ? list : [];
-            this.orders = arr.map(o => {
-              const amt = o.total_amount ?? o.TotalAmount;
-              const numAmt = typeof amt === 'string' ? parseFloat(amt) : Number(amt || 0);
-              return {
-                order_id: o.order_id ?? o.OrderID ?? o.id,
-                user_id: o.user_id ?? o.UserID,
-                shop_id: o.shop_id ?? o.ShopID ?? this.currentShop.shop_id,
-                total_amount: isNaN(numAmt) ? 0 : numAmt,
-                status: o.status ?? o.Status,
-                created_at: o.created_at ?? o.CreatedAt
-              };
-            });
-            this.fetchOrderDishesForOrders();
-          })
-          .catch(() => { this.orders = []; });
+
+        this.orderLoading = true;
+        try {
+          // 1. 获取店铺订单
+          const orderRes = await this.request(`/shop/getordersbyshopid?shop_id=${encodeURIComponent(this.currentShop.shop_id)}`);
+          this.orders = Array.isArray(orderRes) ? orderRes.map(o => ({
+            order_id: o.order_id || o.OrderID || o.id,
+            user_id: o.user_id || o.UserID,
+            shop_id: o.shop_id || o.ShopID,
+            deliverer_id: o.deliverer_id || o.DelivererID,
+            total_amount: this.formatNumber(o.total_amount || o.TotalAmount),
+            status: o.status || o.Status,
+            created_at: o.created_at || o.CreatedAt || ''
+          })) : [];
+
+          // 2. 获取订单菜品明细
+          await this.fetchOrderDishesForOrders();
+
+          // 3. 加载营收数据
+          this.loadStats();
+        } catch (e) {
+          ElementPlus.ElMessage.error('订单加载失败：' + e.message);
+          this.orders = [];
+          this.orderItemsMap = {};
+        } finally {
+          this.orderLoading = false;
+        }
       },
+      // 加载订单菜品明细
       async fetchOrderDishesForOrders() {
-        const orders = Array.isArray(this.orders) ? this.orders : [];
-        const tasks = orders.map(o => {
-          const oid = o.order_id || o.OrderID || o.id;
-          if (!oid) return Promise.resolve({ oid: null, items: [] });
-          return fetch('/shop/getorderdishesbyshopid', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ OrderID: oid })
-          })
-          .then(res => res.ok ? res.json() : [])
-          .then(list => {
-            const arr = Array.isArray(list) ? list : [];
-            const items = arr.map(d => {
-              const up = d.unit_price ?? d.UnitPrice;
-              const st = d.subtotal ?? d.Subtotal;
-              const unitPriceNum = typeof up === 'string' ? parseFloat(up) : Number(up || 0);
-              const subtotalNum = typeof st === 'string' ? parseFloat(st) : Number(st || 0);
-              return {
-                order_id: d.order_id ?? d.OrderID ?? oid,
-                dish_id: d.dish_id ?? d.DishID,
-                dish_name: d.dish_name ?? d.DishName,
-                quantity: d.quantity ?? d.Quantity ?? 1,
-                unit_price: isNaN(unitPriceNum) ? 0 : unitPriceNum,
-                subtotal: isNaN(subtotalNum) ? 0 : subtotalNum,
-              };
-            });
-            return { oid, items };
-          })
-          .catch(() => ({ oid, items: [] }));
-        });
-        const results = await Promise.all(tasks);
-        const map = {};
-        results.forEach(({ oid, items }) => { if (oid) map[oid] = items; });
-        this.orderItemsMap = map;
-      },
-      loadDishes() {
-        if (USE_MOCK || !this.currentShop) {
-          this.dishes = MOCK_DISHES.filter(d => d.shop_id === this.currentShop.shop_id);
+        if (!this.orders.length) {
+          this.orderItemsMap = {};
           return;
         }
-        // 真实后端：比如 /shop/getdishes?shop_id=...
-      },
-      async fetchShopMeta(shopId) {
+
         try {
-          const [feeRes, hoursRes, statusRes, typeRes] = await Promise.all([
-            fetch('/shop/getdeliveryfeebyshopid', {
+          const tasks = this.orders.map(o => {
+            const orderId = o.order_id || o.OrderID;
+            return this.request('/shop/getorderdishesbyshopid', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ShopID: shopId })
-            }),
-            fetch('/shop/getbussinesshoursbyshopid', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ShopID: shopId })
-            }),
-            fetch('/shop/getshopstatusbyshopid', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ShopID: shopId })
-            }),
-            fetch('/shop/getshoptypebyshopid', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ShopID: shopId })
-            })
-          ]);
-          if (feeRes && feeRes.ok) {
-            const jf = await feeRes.json();
-            const v = typeof jf.delivery_fee === 'string' ? parseFloat(jf.delivery_fee) : (jf.delivery_fee ?? 0);
-            this.currentShop.delivery_fee = isNaN(v) ? 0 : v;
-          }
-          if (hoursRes && hoursRes.ok) {
-            const jh = await hoursRes.json();
-            this.currentShop.business_hours = jh.business_hours || this.currentShop.business_hours || '';
-          }
-          if (statusRes && statusRes.ok) {
-            const js = await statusRes.json();
-            const st = typeof js.status === 'number' ? js.status : this.currentShop.status;
-            this.currentShop.status = st;
-            this.shopOpen = st === 1;
-          }
-          if (typeRes && typeRes.ok) {
-            const jt = await typeRes.json();
-            const tp = typeof jt.shop_type === 'number' ? jt.shop_type : this.currentShop.type;
-            this.currentShop.type = tp;
-          }
-        } catch (e) {}
-      },
-      async toggleShopOpen(val) {
-        const prev = this.shopOpen;
-        const status = val ? 1 : 0;
-        try {
-          const res = await fetch('/shop/updateshopstatus', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ShopID: this.currentShop.shop_id, Status: status })
+              body: JSON.stringify({ OrderID: orderId })
+            }).then(res => ({
+              orderId,
+              items: Array.isArray(res) ? res.map(d => ({
+                dish_id: d.dish_id || d.DishID,
+                dish_name: d.dish_name || d.DishName || '未知菜品',
+                quantity: d.quantity || d.Quantity || 1,
+                unit_price: this.formatNumber(d.unit_price || d.UnitPrice),
+                subtotal: this.formatNumber(d.subtotal || d.Subtotal)
+              })) : []
+            })).catch(() => ({ orderId, items: [] }));
           });
-          if (!res.ok) throw new Error('更新失败');
-          const data = await res.json();
-          const st = typeof data.status === 'number' ? data.status : status;
-          this.currentShop.status = st;
-          this.shopOpen = st === 1;
-          ElementPlus.ElMessage.success(this.shopOpen ? '已设置为营业中' : '已设置为打烊');
+
+          const results = await Promise.all(tasks);
+          const map = {};
+          results.forEach(({ orderId, items }) => {
+            if (orderId) map[orderId] = items;
+          });
+          this.orderItemsMap = map;
         } catch (e) {
-          this.shopOpen = prev;
-          ElementPlus.ElMessage.error('状态更新失败');
+          ElementPlus.ElMessage.warning('订单菜品明细加载失败：' + e.message);
+          this.orderItemsMap = {};
         }
       },
+      // 加载菜单
+      async loadMenus() {
+        if (!this.currentShop) return;
+
+        this.menuLoading = true;
+        try {
+          // 1. 获取店铺菜单列表
+          const menuRes = await this.request('/menu/getmenubyshopid', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ shop_id: String(this.currentShop.shop_id) })
+          });
+
+          this.menus = Array.isArray(menuRes) ? menuRes.map(m => ({
+            menu_id: m.menu_id || m.MenuID || m.id,
+            shop_id: m.shop_id || m.ShopID,
+            menu_name: m.menu_name || m.MenuName || '未命名菜单'
+          })) : [];
+
+          // 2. 默认选中第一个菜单
+          if (!this.selectedMenuId && this.menus.length > 0) {
+            this.selectedMenuId = this.menus[0].menu_id;
+            await this.loadDishesForMenu(this.selectedMenuId);
+          }
+        } catch (e) {
+          ElementPlus.ElMessage.error('菜单加载失败：' + e.message);
+          this.menus = [];
+        } finally {
+          this.menuLoading = false;
+        }
+      },
+      // 切换菜单
+      async onMenuChange(menuId) {
+        if (!menuId || !this.currentShop) return;
+        this.selectedMenuId = menuId;
+        await this.loadDishesForMenu(menuId);
+      },
+      // 加载菜单下的菜品
+      async loadDishesForMenu(menuId) {
+        if (!menuId || !this.currentShop) return;
+
+        this.menuLoading = true;
+        try {
+          const dishRes = await this.request('/menu/getdishesbymenuid', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ menu_id: String(menuId) })
+          });
+
+          this.dishes = Array.isArray(dishRes) ? dishRes.map(d => ({
+            dish_id: d.dish_id || d.DishID || d.id,
+            shop_id: d.shop_id || d.ShopID,
+            dish_name: d.dish_name || d.DishName || '',
+            price: this.formatNumber(d.price || d.Price),
+            stock: d.stock || d.Stock || 0,
+            status: d.status || d.Status || 0
+          })) : [];
+        } catch (e) {
+          ElementPlus.ElMessage.error('菜品加载失败：' + e.message);
+          this.dishes = [];
+        } finally {
+          this.menuLoading = false;
+        }
+      },
+      // 加载店铺元信息（配送费、营业时间等）
+      async fetchShopMeta(shopId) {
+        if (!shopId) return;
+
+        try {
+          const [feeRes, hoursRes, statusRes, typeRes] = await Promise.all([
+            this.request('/shop/getdeliveryfeebyshopid', {
+              method: 'POST',
+              body: JSON.stringify({ shop_id: shopId })
+            }),
+            this.request('/shop/getbussinesshoursbyshopid', {
+              method: 'POST',
+              body: JSON.stringify({ shop_id: shopId })
+            }),
+            this.request('/shop/getshopstatusbyshopid', {
+              method: 'POST',
+              body: JSON.stringify({ shop_id: shopId })
+            }),
+            this.request('/shop/getshoptypebyshopid', {
+              method: 'POST',
+              body: JSON.stringify({ shop_id: shopId })
+            })
+          ]);
+
+          // 配送费
+          this.currentShop.delivery_fee = this.formatNumber(feeRes?.delivery_fee || feeRes?.DeliveryFee || 0);
+          // 营业时间
+          this.currentShop.business_hours = hoursRes?.business_hours || hoursRes?.BusinessHours || '';
+          // 店铺状态
+          const status = feeRes?.status || feeRes?.Status || 1;
+          this.currentShop.status = status;
+          this.shopOpen = status === 1;
+          // 店铺类型
+          this.currentShop.type = typeRes?.type || typeRes?.Type || 0;
+        } catch (e) {
+          ElementPlus.ElMessage.warning('店铺元信息加载失败：' + e.message);
+        }
+      },
+      // 加载营收数据
+      async loadStats() {
+        this.statLoading = true;
+        try {
+          // 可扩展：调用专门的营收统计接口
+          // const statRes = await this.request('/shop/getstats', {
+          //   method: 'POST',
+          //   body: JSON.stringify({ shop_id: this.currentShop.shop_id })
+          // });
+          // 暂用订单数据计算
+        } catch (e) {
+          ElementPlus.ElMessage.warning('营收数据加载失败：' + e.message);
+        } finally {
+          this.statLoading = false;
+        }
+      },
+      // 切换店铺营业状态
+      async toggleShopOpen(val) {
+        if (!this.currentShop) return;
+
+        const status = val ? 1 : 0;
+        try {
+          await this.request('/shop/updateshopstatus', {
+            method: 'POST',
+            body: JSON.stringify({ 
+              ShopID: this.currentShop.shop_id, 
+              Status: status 
+            })
+          });
+
+          this.currentShop.status = status;
+          this.shopOpen = val;
+          ElementPlus.ElMessage.success(val ? '已设置为营业中' : '已设置为打烊');
+        } catch (e) {
+          this.shopOpen = !val; // 回滚
+          ElementPlus.ElMessage.error('状态更新失败：' + e.message);
+        }
+      },
+      // 用户下拉菜单操作
       handleUserCommand(cmd) {
         if (cmd === 'logout') {
           ElementPlus.ElMessageBox.confirm('确定退出登录吗？', '提示', {
@@ -1023,11 +1111,19 @@
             type: 'warning'
           }).then(() => {
             this.currentShop = null;
+            // 清空所有数据
+            this.orders = [];
+            this.dishes = [];
+            this.menus = [];
+            this.users = [];
+            this.deliverers = [];
+            this.selectedMenuId = null;
           }).catch(() => {});
         } else if (cmd === 'profile') {
-          ElementPlus.ElMessage.info('店铺资料编辑暂为 Mock，可后续接后端表单。');
+          ElementPlus.ElMessage.info('店铺资料编辑功能待开发');
         }
       },
+      // 订单状态文本
       statusText(s) {
         const map = {
           0: '未下单',
@@ -1042,158 +1138,195 @@
         };
         return map[s] || '未知';
       },
+      // 订单状态样式类
       statusClass(s) {
         return {
           'order-status-tag': true,
-          'status-warn': s === 1 || s === 2 || s === 4 || s === 8,
+          'status-warn': [1,2,4,8].includes(s),
           'status-info': s === 5,
           'status-success': s === 6,
-          'status-error': s === 3 || s === 7
+          'status-error': [3,7].includes(s)
         };
       },
-      setStatus(order, newStatus) {
-        order.status = newStatus;
-        ElementPlus.ElMessage.success(`已将订单 #${order.order_id} 状态改为：${this.statusText(newStatus)}（仅前端 Mock）`);
-        // 真实情况这里调用 /shop/updateorderstatus
+      // 更新订单状态
+      async setStatus(order, newStatus) {
+        if (!order || !this.currentShop) return;
+
+        this.operLoading = true;
+        try {
+          const orderId = order.order_id || order.OrderID;
+          await this.request('/shop/updateorderstatus', {
+            method: 'POST',
+            body: JSON.stringify({
+              OrderID: orderId,
+              Status: newStatus
+            })
+          });
+
+          // 刷新订单
+          await this.loadOrders();
+          ElementPlus.ElMessage.success(`已将订单 #${orderId} 状态改为：${this.statusText(newStatus)}`);
+        } catch (e) {
+          ElementPlus.ElMessage.error('状态更新失败：' + e.message);
+        } finally {
+          this.operLoading = false;
+        }
       },
+      // 标记备餐完成
       async markWaitingForDelivery(order) {
-        const oid = order.order_id || order.OrderID || order.id;
-        if (!oid) {
-          ElementPlus.ElMessage.error('订单ID缺失');
-          return;
-        }
+        if (!order) return;
+        this.operLoading = true;
         try {
-          const res = await fetch('/shop/watingfordeliveryorder', {
+          const orderId = order.order_id || order.OrderID || order.id;
+          await this.request('/shop/watingfordeliveryorder', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ OrderID: oid })
+            body: JSON.stringify({ OrderID: orderId })
           });
-          if (!res.ok) throw new Error('标记备餐完成失败');
           await this.loadOrders();
-          ElementPlus.ElMessage.success(`已标记备餐完成 #${oid}`);
+          ElementPlus.ElMessage.success(`已标记备餐完成 #${orderId}`);
         } catch (e) {
-          ElementPlus.ElMessage.error(e.message || '操作失败');
+          ElementPlus.ElMessage.error('操作失败：' + e.message);
+        } finally {
+          this.operLoading = false;
         }
       },
+      // 接单
       async acceptOrder(order) {
-        const oid = order.order_id || order.OrderID || order.id;
-        if (!oid) {
-          ElementPlus.ElMessage.error('订单ID缺失');
+        if (!order) return;
+        this.operLoading = true;
+        try {
+          const orderId = order.order_id || order.OrderID || order.id;
+          await this.request('/shop/acceptorder', {
+            method: 'POST',
+            body: JSON.stringify({ OrderID: orderId })
+          });
+          await this.loadOrders();
+          ElementPlus.ElMessage.success(`已接单 #${orderId}`);
+        } catch (e) {
+          ElementPlus.ElMessage.error('接单失败：' + e.message);
+        } finally {
+          this.operLoading = false;
+        }
+      },
+      // 刷新订单
+      async refreshOrders() {
+        await this.loadOrders();
+        ElementPlus.ElMessage.success('订单已刷新');
+      },
+      // 新增菜品
+      addDish() {
+        // 重置编辑表单
+        this.editForm = {
+          dish_id: null,
+          shop_id: this.currentShop.shop_id,
+          dish_name: '',
+          price: 0,
+          stock: 0,
+          status: 1
+        };
+        this.editDialogVisible = true;
+      },
+      // 切换菜品状态
+      async toggleDishStatus(dish) {
+        if (!dish || !this.currentShop) return;
+
+        this.operLoading = true;
+        try {
+          const newStatus = dish.status === 1 ? 0 : 1;
+          await this.request('/dish/updatestatus', {
+            method: 'POST',
+            body: JSON.stringify({
+              DishID: dish.dish_id,
+              Status: newStatus
+            })
+          });
+
+          // 刷新菜品
+          await this.loadDishesForMenu(this.selectedMenuId);
+          ElementPlus.ElMessage.success(newStatus === 1 ? '菜品已上架' : '菜品已停售');
+        } catch (e) {
+          ElementPlus.ElMessage.error('菜品状态更新失败：' + e.message);
+        } finally {
+          this.operLoading = false;
+        }
+      },
+      // 编辑菜品
+      editDish(dish) {
+        this.editForm = {
+          dish_id: dish.dish_id,
+          shop_id: dish.shop_id,
+          dish_name: dish.dish_name,
+          price: dish.price,
+          stock: dish.stock,
+          status: dish.status
+        };
+        this.editDialogVisible = true;
+      },
+      // 保存菜品编辑
+      async saveDishEdit() {
+        if (!this.currentShop) return;
+
+        // 表单验证
+        if (!this.editForm.dish_name.trim()) {
+          ElementPlus.ElMessage.warning('菜名不能为空');
           return;
         }
-        try {
-          const res = await fetch('/shop/acceptorder', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ OrderID: oid })
-          });
-          if (!res.ok) throw new Error('接单失败');
-          await this.loadOrders();
-          ElementPlus.ElMessage.success(`已接单 #${oid}`);
-        } catch (e) {
-          ElementPlus.ElMessage.error(e.message || '接单失败');
+        if (this.editForm.price < 0) {
+          ElementPlus.ElMessage.warning('价格不能为负');
+          return;
         }
-      },
-      refreshOrders() {
-        this.loadOrders();
-        ElementPlus.ElMessage.success('已刷新订单');
-      },
-      addMockDish() {
-        this.canModifyMenu().then(ok => {
-          if (!ok) return;
-          const maxId = this.dishes.reduce((m, d) => Math.max(m, d.dish_id), 0) + 1;
-          this.dishes.push({
-            dish_id: maxId,
-            shop_id: this.currentShop.shop_id,
-            dish_name: '新菜品 #' + maxId,
-            price: 19.9,
-            stock: 50,
-            status: 1
-          });
-          ElementPlus.ElMessage.success('已添加一条示例菜品（仅前端）');
-        });
-      },
-      toggleDishStatus(d) {
-        this.canModifyMenu().then(ok => {
-          if (!ok) return;
-          d.status = d.status === 1 ? 0 : 1;
-          ElementPlus.ElMessage.success(d.status === 1 ? '菜品已上架（Mock）' : '菜品已停售（Mock）');
-        });
-      },
-      // ===== 替换：编辑菜品，弹出弹窗 =====
-      editDish(d) {
-        this.canModifyMenu().then(ok => {
-          if (!ok) return;
-          this.editForm = {
-            dish_id: d.dish_id,
-            shop_id: d.shop_id,
-            dish_name: d.dish_name,
-            price: d.price,
-            stock: d.stock,
-            status: d.status
+        if (this.editForm.stock < 0) {
+          ElementPlus.ElMessage.warning('库存不能为负');
+          return;
+        }
+
+        this.operLoading = true;
+        try {
+          const params = {
+            ShopID: this.currentShop.shop_id,
+            DishName: this.editForm.dish_name.trim(),
+            Price: this.editForm.price,
+            Stock: this.editForm.stock,
+            Status: this.editForm.status
           };
-          this.editDialogVisible = true;
-        });
-      },
-      // ===== 新增：保存编辑结果 =====
-      saveDishEdit() {
-        this.canModifyMenu().then(ok => {
-          if (!ok) return;
-          if (!this.editForm.dish_name.trim()) {
-            ElementPlus.ElMessage.warning('菜名不能为空');
-            return;
-          }
-          if (this.editForm.price < 0) {
-            ElementPlus.ElMessage.warning('价格不能为负');
-            return;
-          }
-          if (this.editForm.stock < 0) {
-            ElementPlus.ElMessage.warning('库存不能为负');
-            return;
+
+          if (this.editForm.dish_id) {
+            // 编辑菜品
+            params.DishID = this.editForm.dish_id;
+            await this.request('/dish/update', {
+              method: 'POST',
+              body: JSON.stringify(params)
+            });
+          } else {
+            // 新增菜品
+            await this.request('/dish/add', {
+              method: 'POST',
+              body: JSON.stringify(params)
+            });
           }
 
-          const idx = this.dishes.findIndex(d => d.dish_id === this.editForm.dish_id);
-          if (idx === -1) {
-            ElementPlus.ElMessage.error('未找到对应菜品，保存失败');
-            return;
-          }
-
-          this.dishes[idx].dish_name = this.editForm.dish_name.trim();
-          this.dishes[idx].price = Number(this.editForm.price);
-          this.dishes[idx].stock = Number(this.editForm.stock);
-          this.dishes[idx].status = this.editForm.status;
-
+          // 刷新菜品
+          await this.loadDishesForMenu(this.selectedMenuId);
           this.editDialogVisible = false;
-          ElementPlus.ElMessage.success('菜品信息已更新（仅前端 Mock）');
-        });
-      },
-      async canModifyMenu() {
-        if (!this.currentShop) return false;
-        const st = typeof this.currentShop.status === 'number' ? this.currentShop.status : (this.shopOpen ? 1 : 0);
-        if (st === 0) return true;
-        try {
-          const res = await fetch(`/shop/getordersbyshopid?shop_id=${encodeURIComponent(this.currentShop.shop_id)}`);
-          const list = res.ok ? await res.json() : [];
-          const arr = Array.isArray(list) ? list : [];
-          const hasRunning = arr.some(o => {
-            const s = o.status ?? o.Status;
-            return s === 0 || s === 1 || s === 2 || s === 8;
-          });
-          if (hasRunning) {
-            ElementPlus.ElMessageBox.alert('当前用订单进行中 无法修改菜单 请等待打烊后更改', '提示', { type: 'warning' });
-            return false;
-          }
-          return true;
+          ElementPlus.ElMessage.success(this.editForm.dish_id ? '菜品已更新' : '菜品已新增');
         } catch (e) {
-          return false;
+          ElementPlus.ElMessage.error('菜品保存失败：' + e.message);
+        } finally {
+          this.operLoading = false;
         }
+      },
+      // 数字格式化（兼容字符串/数字）
+      formatNumber(val) {
+        if (val === undefined || val === null) return 0;
+        const num = typeof val === 'string' ? parseFloat(val) : Number(val);
+        return isNaN(num) ? 0 : num;
       }
     }
   };
 
   const app = Vue.createApp(App);
-  // 注册 Element Plus & 图标
   app.use(ElementPlus);
+  // 注册所有 Element Plus 图标
   for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
     app.component(key, component);
   }

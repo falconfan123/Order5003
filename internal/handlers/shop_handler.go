@@ -104,7 +104,9 @@ func (h *ShopHandler) GetDeliveryFeeByShopID(c *gin.Context) {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
 		return
 	}
-	var request struct{ ShopID int }
+	var request struct {
+		ShopID int `json:"shop_id"`
+	}
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
@@ -123,7 +125,9 @@ func (h *ShopHandler) GetBusinessHoursByShopID(c *gin.Context) {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
 		return
 	}
-	var request struct{ ShopID int }
+	var request struct {
+		ShopID int `json:"shop_id"`
+	}
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
@@ -142,11 +146,14 @@ func (h *ShopHandler) GetShopTypeByShopID(c *gin.Context) {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
 		return
 	}
-	var request struct{ ShopID int }
+	var request struct {
+		ShopID int `json:"shop_id"`
+	}
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
+	logger.Info("GetShopTypeByShopID ShopID", request.ShopID)
 	shopType, err := h.svc.GetShopTypeByShopID(request.ShopID)
 	logger.Info("shopType", shopType)
 	if err != nil {
@@ -239,4 +246,25 @@ func (h *ShopHandler) WaitingForDeliveryOrder(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Order waiting for preparing"})
+}
+
+func (h *ShopHandler) GetShopStatusByShopID(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var request struct {
+		ShopID int `json:"shop_id"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	status, err := h.svc.GetShopStatusByShopID(request.ShopID)
+	logger.Info("status", status)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": status})
 }

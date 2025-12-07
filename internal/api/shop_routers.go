@@ -16,6 +16,8 @@ func RegisterShopRoutes(r *gin.Engine, h *handlers.ShopHandler) {
 	g.GET("/getordersbyshopid", func(c *gin.Context) { h.GetOrdersByShopID(c) })
 	g.POST("/getbussinesshoursbyshopid", func(c *gin.Context) { h.GetBusinessHoursByShopID(c) })
 	g.POST("/getshoptypebyshopid", func(c *gin.Context) { h.GetShopTypeByShopID(c) })
+	//查看店铺状态
+	g.POST("/getshopstatusbyshopid", func(c *gin.Context) { h.GetShopStatusByShopID(c) })
 	// 更新店铺状态
 	g.POST("/updateshopstatus", func(c *gin.Context) { h.UpdateShopStatus(c) })
 	// 获取订单中的菜品
