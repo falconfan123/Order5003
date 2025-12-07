@@ -335,7 +335,6 @@
       font-weight: 800;
     }
 
-    /* 编辑弹窗的小提示样式可选 */
     .dialog-tip {
       font-size: 12px;
       color: #999;
@@ -717,6 +716,43 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- 店铺资料编辑弹窗 -->
+    <el-dialog
+      v-model="shopProfileDialogVisible"
+      title="编辑店铺资料"
+      width="480px"
+    >
+      <el-form :model="shopProfileForm" label-width="90px">
+        <el-form-item label="店铺名称">
+          <el-input v-model="shopProfileForm.shop_name" placeholder="请输入店铺名称"></el-input>
+        </el-form-item>
+        <el-form-item label="联系电话">
+          <el-input v-model="shopProfileForm.phone" placeholder="请输入联系电话"></el-input>
+        </el-form-item>
+        <el-form-item label="配送范围">
+          <el-input-number
+            v-model="shopProfileForm.delivery_range"
+            :min="0"
+            :step="0.5"
+            style="width:180px;"
+          ></el-input-number>
+          <span style="margin-left:8px;">公里</span>
+        </el-form-item>
+        <el-form-item label="营业时间">
+          <el-input v-model="shopProfileForm.business_hours" placeholder="例如 10:00-22:00"></el-input>
+        </el-form-item>
+        <div class="dialog-tip">
+          * 目前为前端 mock，修改仅在本页面生效，不会写入后端数据库。
+        </div>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="shopProfileDialogVisible = false">取 消</el-button>
+          <el-button type="primary" @click="saveShopProfile">保 存</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </template>
 </div>
 
@@ -756,7 +792,7 @@
         seriesRevenue: [],
         // 操作加载状态
         operLoading: false,
-        // 编辑弹窗
+        // 编辑菜品弹窗
         editDialogVisible: false,
         editForm: {
           dish_id: null,
@@ -766,7 +802,14 @@
           stock: 0,
           status: 1
         },
-        
+        // 店铺资料编辑弹窗
+        shopProfileDialogVisible: false,
+        shopProfileForm: {
+          shop_name: '',
+          phone: '',
+          delivery_range: 0,
+          business_hours: ''
+        }
       };
     },
     computed: {
@@ -895,7 +938,7 @@
             throw new Error('未查询到店铺信息');
           }
 
-          // 3. 先初始化店铺基础信息，避免在获取元信息时访问空对象
+          // 3. 初始化店铺基础信息
           this.currentShop = {
             shop_id: shopId,
             shop_name: shopDetail.shop_name || shopDetail.ShopName || name,
@@ -903,10 +946,12 @@
             delivery_fee: 0,
             business_hours: '',
             status: null,
-            type: shopDetail.type || shopDetail.Type || 0
+            type: shopDetail.type || shopDetail.Type || 0,
+            phone: shopDetail.phone || shopDetail.Phone || '13800000000',
+            delivery_range: this.formatNumber(
+              shopDetail.delivery_range || shopDetail.DeliveryRange || 3
+            )
           };
-          // 初始状态不依赖店铺详情，等待 /shop/getshopstatusbyshopid 结果
-
           // 4. 再补全店铺元信息（配送费、营业时间、状态、类型）
           await this.fetchShopMeta(shopId);
 
@@ -963,7 +1008,7 @@
           this.orderLoading = false;
         }
       },
-      // 加载订单菜品明细
+      // 加载订单菜品明细（修复价格为 0 的问题）
       async fetchOrderDishesForOrders() {
         if (!this.orders.length) {
           this.orderItemsMap = {};
@@ -976,16 +1021,27 @@
             return this.request('/shop/getorderdishesbyshopid', {
               method: 'POST',
               body: JSON.stringify({ OrderID: orderId })
-            }).then(res => ({
-              orderId,
-              items: Array.isArray(res) ? res.map(d => ({
-                dish_id: d.dish_id || d.DishID,
-                dish_name: d.dish_name || d.DishName || '未知菜品',
-                quantity: d.quantity || d.Quantity || 1,
-                unit_price: this.formatNumber(d.unit_price || d.UnitPrice),
-                subtotal: this.formatNumber(d.subtotal || d.Subtotal)
-              })) : []
-            })).catch(() => ({ orderId, items: [] }));
+            }).then(res => {
+              const items = Array.isArray(res) ? res.map(d => {
+                const quantity = d.quantity || d.Quantity || 1;
+                const unitPrice = this.formatNumber(
+                  d.unit_price || d.UnitPrice || d.price || d.Price
+                );
+                let subtotal = this.formatNumber(d.subtotal || d.Subtotal);
+                // 如果接口没返回 subtotal，就自己算 单价 * 数量
+                if (!subtotal && unitPrice) {
+                  subtotal = this.formatNumber(unitPrice * quantity);
+                }
+                return {
+                  dish_id: d.dish_id || d.DishID,
+                  dish_name: d.dish_name || d.DishName || '未知菜品',
+                  quantity,
+                  unit_price: unitPrice,
+                  subtotal
+                };
+              }) : [];
+              return { orderId, items };
+            }).catch(() => ({ orderId, items: [] }));
           });
 
           const results = await Promise.all(tasks);
@@ -1133,7 +1189,7 @@
           this.shopOpen = status === 1;
           // 店铺类型
           this.currentShop.type = typeRes?.type || typeRes?.Type || 0;
-          console.log('status接口返回值：', statusRes); // 加日志，看是否真的返回status=0
+          console.log('status接口返回值：', statusRes);
         } catch (e) {
           ElementPlus.ElMessage.warning('店铺元信息加载失败：' + e.message);
         }
@@ -1232,7 +1288,7 @@
           const padding = { left: 56, right: 24, top: 16, bottom: 46 };
           const plotW = cssW - padding.left - padding.right;
           const plotH = cssH - padding.top - padding.bottom;
-          const xRight = padding.left + plotW - 8; // 右侧预留像素，避免贴边
+          const xRight = padding.left + plotW - 8;
           const values = series.map(s => s.value);
           const minV = Math.min(...values, 0);
           const maxV = Math.max(...values, 1);
@@ -1319,7 +1375,7 @@
           this.currentShop.status = status;
           ElementPlus.ElMessage.success(val ? '已设置为营业中' : '已设置为打烊');
         } catch (e) {
-          this.shopOpen = !val ? 0 : 1;; // 回滚
+          this.shopOpen = !val ? 0 : 1;
           ElementPlus.ElMessage.error('状态更新失败：' + e.message);
         }
       },
@@ -1341,8 +1397,35 @@
             this.selectedMenuId = null;
           }).catch(() => {});
         } else if (cmd === 'profile') {
-          ElementPlus.ElMessage.info('店铺资料编辑功能待开发');
+          this.openShopProfile();
         }
+      },
+      // 打开店铺资料编辑弹窗
+      openShopProfile() {
+        if (!this.currentShop) return;
+        this.shopProfileForm = {
+          shop_name: this.currentShop.shop_name || '',
+          phone: this.currentShop.phone || '',
+          delivery_range: (this.currentShop.delivery_range !== undefined && this.currentShop.delivery_range !== null)
+            ? this.currentShop.delivery_range
+            : 0,
+          business_hours: this.currentShop.business_hours || ''
+        };
+        this.shopProfileDialogVisible = true;
+      },
+      // 保存店铺资料（前端 mock）
+      saveShopProfile() {
+        if (!this.currentShop) return;
+        if (!this.shopProfileForm.shop_name.trim()) {
+          ElementPlus.ElMessage.warning('店铺名称不能为空');
+          return;
+        }
+        this.currentShop.shop_name = this.shopProfileForm.shop_name.trim();
+        this.currentShop.phone = (this.shopProfileForm.phone || '').trim();
+        this.currentShop.delivery_range = this.shopProfileForm.delivery_range || 0;
+        this.currentShop.business_hours = (this.shopProfileForm.business_hours || '').trim();
+        this.shopProfileDialogVisible = false;
+        ElementPlus.ElMessage.success('店铺资料已更新（仅当前页面生效）');
       },
       // 订单状态文本
       statusText(s) {
