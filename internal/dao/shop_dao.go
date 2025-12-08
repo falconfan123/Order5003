@@ -67,3 +67,24 @@ func GetTodayOrderCountByShopID(db *gorm.DB, shopID int) (int, error) {
 	}
 	return int(count), nil
 }
+
+// UpdateShopInfo 更新指定店铺的资料
+func UpdateShopInfo(db *gorm.DB, shopID int, shopName string, deliveryRange float64, deliveryFee float64, businessHours string, shopType int) error {
+	return db.Model(&model.ShopEntity{}).Where("shop_id = ?", shopID).Updates(map[string]interface{}{
+		"shop_name":      shopName,
+		"delivery_range": deliveryRange,
+		"delivery_fee":   deliveryFee,
+		"business_hours": businessHours,
+		"type":           shopType,
+	}).Error
+}
+
+// SaveDish 保存菜品
+func SaveDish(db *gorm.DB, dishID int, dishName string, price float64, stock int, status int) error {
+	return db.Model(&model.DishEntity{}).Where("dish_id = ?", dishID).Updates(map[string]interface{}{
+		"dish_name": dishName,
+		"price":     price,
+		"stock":     stock,
+		"status":    status,
+	}).Error
+}

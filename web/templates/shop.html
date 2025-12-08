@@ -347,11 +347,21 @@
     }
 
     /* 加载中样式 */
-    .loading-wrap {
-      text-align: center;
-      padding: 40px 0;
-      color: #999;
-    }
+.loading-wrap {
+  text-align: center;
+  padding: 40px 0;
+  color: #999;
+}
+ 
+
+/* 弹窗兜底样式 */
+.el-dialog__body {
+  padding: 20px;
+  overflow: visible !important;
+}
+.el-dialog {
+  min-width: 500px !important;
+}
   </style>
 </head>
 <body>
@@ -411,7 +421,7 @@
         <div class="shop-info-main">
           <div class="shop-name">{{ currentShop.shop_name }}</div>
           <div class="shop-sub">
-            状态：{{ shopStatusText }} · 配送费 ¥{{ currentShop.delivery_fee.toFixed(2) }} · 经营时间 {{ currentShop.business_hours }} · 分类 {{ shopTypeText }}
+            状态：{{ shopStatusText }} · 配送范围 {{ (parseFloat(currentShop.delivery_range)||0).toFixed(1) }}km · 配送费 ¥{{ (parseFloat(currentShop.delivery_fee)||0).toFixed(2) }} · 经营时间 {{ currentShop.business_hours }}
           </div>
         </div>
       </div>
@@ -428,9 +438,9 @@
         <el-dropdown @command="handleUserCommand">
           <span style="display:flex;align-items:center;gap:8px;cursor:pointer;">
             <el-avatar :size="30" style="background:#e0fbf9;color:var(--primary-color);">
-              {{ currentShop.manager_name[0] }}
+              {{ (currentShop.shop_name || '商家')[0] }}
             </el-avatar>
-            <span style="font-size:13px;">{{ currentShop.manager_name }}</span>
+            <span style="font-size:13px;">{{ currentShop.shop_name || '商家' }}</span>
             <el-icon><CaretBottom /></el-icon>
           </span>
           <template #dropdown>
@@ -727,9 +737,6 @@
         <el-form-item label="店铺名称">
           <el-input v-model="shopProfileForm.shop_name" placeholder="请输入店铺名称"></el-input>
         </el-form-item>
-        <el-form-item label="联系电话">
-          <el-input v-model="shopProfileForm.phone" placeholder="请输入联系电话"></el-input>
-        </el-form-item>
         <el-form-item label="配送范围">
           <el-input-number
             v-model="shopProfileForm.delivery_range"
@@ -739,12 +746,20 @@
           ></el-input-number>
           <span style="margin-left:8px;">公里</span>
         </el-form-item>
+        <el-form-item label="配送费">
+          <el-input-number
+            v-model="shopProfileForm.delivery_fee"
+            :min="0"
+            :step="0.5"
+            :precision="2"
+            style="width:180px;"
+          ></el-input-number>
+          <span style="margin-left:8px;">元</span>
+        </el-form-item>
         <el-form-item label="营业时间">
           <el-input v-model="shopProfileForm.business_hours" placeholder="例如 10:00-22:00"></el-input>
         </el-form-item>
-        <div class="dialog-tip">
-          * 目前为前端 mock，修改仅在本页面生效，不会写入后端数据库。
-        </div>
+        
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -806,8 +821,8 @@
         shopProfileDialogVisible: false,
         shopProfileForm: {
           shop_name: '',
-          phone: '',
           delivery_range: 0,
+          delivery_fee: 0,
           business_hours: ''
         }
       };
@@ -862,11 +877,7 @@
         return status === 1 ? '营业中' : '休息中';
       },
       // 店铺类型文本
-      shopTypeText() {
-        const typeMap = { 0: '全部', 1: '甜品奶茶', 2: '炸鸡汉堡', 3: '美味中餐', 4: '生活百货' };
-        const type = this.currentShop?.type || this.currentShop?.Type || 0;
-        return typeMap[type] || '未知';
-      }
+      
     },
     watch: {
       activeMenu(val) {
@@ -928,32 +939,32 @@
 
           const shopId = loginRes.shop_id || loginRes.ShopID;
 
-          // 2. 获取店铺详情
-          const shopDetail = await this.request('/shop/getall', {
-            method: 'POST',
-            body: JSON.stringify({ shop_id: shopId })
-          });
+        // 2. 从 /shop/getall 获取所有店铺，并定位当前店铺
+        const allShops = await this.request('/shop/getall', { method: 'POST' });
+        const shopItem = Array.isArray(allShops)
+          ? allShops.find(s => (s.shop_id || s.ShopID) === shopId)
+          : allShops;
+        if (!shopItem) {
+          throw new Error('未查询到店铺信息');
+        }
 
-          if (!shopDetail) {
-            throw new Error('未查询到店铺信息');
-          }
-
-          // 3. 初始化店铺基础信息
-          this.currentShop = {
-            shop_id: shopId,
-            shop_name: shopDetail.shop_name || shopDetail.ShopName || name,
-            manager_name: shopDetail.manager_name || shopDetail.ManagerName || name,
-            delivery_fee: 0,
-            business_hours: '',
-            status: null,
-            type: shopDetail.type || shopDetail.Type || 0,
-            phone: shopDetail.phone || shopDetail.Phone || '13800000000',
-            delivery_range: this.formatNumber(
-              shopDetail.delivery_range || shopDetail.DeliveryRange || 3
-            )
-          };
-          // 4. 再补全店铺元信息（配送费、营业时间、状态、类型）
-          await this.fetchShopMeta(shopId);
+        // 3. 初始化店铺基础信息（全部来自 /shop/getall）
+        const sname = shopItem.shop_name || shopItem.ShopName || name;
+        const drange = this.formatNumber(shopItem.delivery_range || shopItem.DeliveryRange);
+        const dfee = this.formatNumber(shopItem.delivery_fee || shopItem.DeliveryFee);
+        const bhours = shopItem.business_hours || shopItem.BusinessHours || '';
+        const status = Number(shopItem.status ?? shopItem.Status ?? 0);
+        const stype = Number(shopItem.type ?? shopItem.Type ?? 0);
+        this.currentShop = {
+          shop_id: shopId,
+          shop_name: sname,
+          delivery_range: drange,
+          delivery_fee: dfee,
+          business_hours: bhours,
+          status: status,
+          type: stype
+        };
+        this.shopOpen = status === 1;
 
           // 5. 加载基础数据
           await Promise.all([
@@ -1405,27 +1416,42 @@
         if (!this.currentShop) return;
         this.shopProfileForm = {
           shop_name: this.currentShop.shop_name || '',
-          phone: this.currentShop.phone || '',
-          delivery_range: (this.currentShop.delivery_range !== undefined && this.currentShop.delivery_range !== null)
-            ? this.currentShop.delivery_range
-            : 0,
+          delivery_range: Number(this.currentShop.delivery_range || 0),
+          delivery_fee: Number(this.currentShop.delivery_fee || 0),
           business_hours: this.currentShop.business_hours || ''
         };
         this.shopProfileDialogVisible = true;
       },
-      // 保存店铺资料（前端 mock）
-      saveShopProfile() {
+      // 保存店铺资料（后端持久化）
+      async saveShopProfile() {
         if (!this.currentShop) return;
-        if (!this.shopProfileForm.shop_name.trim()) {
+        const name = (this.shopProfileForm.shop_name || '').trim();
+        if (!name) {
           ElementPlus.ElMessage.warning('店铺名称不能为空');
           return;
         }
-        this.currentShop.shop_name = this.shopProfileForm.shop_name.trim();
-        this.currentShop.phone = (this.shopProfileForm.phone || '').trim();
-        this.currentShop.delivery_range = this.shopProfileForm.delivery_range || 0;
-        this.currentShop.business_hours = (this.shopProfileForm.business_hours || '').trim();
-        this.shopProfileDialogVisible = false;
-        ElementPlus.ElMessage.success('店铺资料已更新（仅当前页面生效）');
+        const payload = {
+          shop_id: this.currentShop.shop_id,
+          shop_name: name,
+          delivery_range: this.formatNumber(this.shopProfileForm.delivery_range),
+          delivery_fee: this.formatNumber(this.shopProfileForm.delivery_fee),
+          business_hours: (this.shopProfileForm.business_hours || '').trim()
+        };
+        try {
+          await this.request('/shop/updateshopinfo', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          });
+          // 本地状态同步
+          this.currentShop.shop_name = payload.shop_name;
+          this.currentShop.delivery_range = payload.delivery_range;
+          this.currentShop.delivery_fee = payload.delivery_fee;
+          this.currentShop.business_hours = payload.business_hours;
+          this.shopProfileDialogVisible = false;
+          ElementPlus.ElMessage.success('店铺资料已更新');
+        } catch (e) {
+          ElementPlus.ElMessage.error('店铺资料保存失败：' + e.message);
+        }
       },
       // 订单状态文本
       statusText(s) {
@@ -1619,26 +1645,28 @@
 
         this.operLoading = true;
         try {
-          const params = {
-            ShopID: this.currentShop.shop_id,
-            DishName: this.editForm.dish_name.trim(),
-            Price: this.editForm.price,
-            Stock: this.editForm.stock,
-            Status: this.editForm.status
-          };
-
           if (this.editForm.dish_id) {
-            // 编辑菜品
-            params.DishID = this.editForm.dish_id;
-            await this.request('/dish/update', {
+            const body = {
+              dish_id: this.editForm.dish_id,
+              dish_name: this.editForm.dish_name.trim(),
+              price: this.editForm.price,
+              stock: this.editForm.stock,
+              status: this.editForm.status
+            };
+            await this.request('/shop/savedish', {
               method: 'POST',
-              body: JSON.stringify(params)
+              body: JSON.stringify(body)
             });
           } else {
-            // 新增菜品
+            const body = {
+              dish_name: this.editForm.dish_name.trim(),
+              price: this.editForm.price,
+              stock: this.editForm.stock,
+              status: this.editForm.status
+            };
             await this.request('/dish/add', {
               method: 'POST',
-              body: JSON.stringify(params)
+              body: JSON.stringify(body)
             });
           }
 

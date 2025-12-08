@@ -290,3 +290,19 @@ func (s *GormStore) GetAllRevenueByShopID(shopID int) ([]bizmodel.RevenueCountAl
 	}
 	return out, nil
 }
+
+// UpdateShopInfo 更新指定店铺的资料
+func (s *GormStore) UpdateShopInfo(shopID int, shopName string, deliveryRange float64, deliveryFee float64, businessHours string, shopType int) error {
+	if err := dao.UpdateShopInfo(s.db, shopID, shopName, deliveryRange, deliveryFee, businessHours, shopType); err != nil {
+		return errors.New("update shop info failed")
+	}
+	return nil
+}
+
+// SaveDish 保存菜品
+func (s *GormStore) SaveDish(dishID int, dishName string, price float64, stock int, status int) error {
+	if err := dao.SaveDish(s.db, dishID, dishName, price, stock, status); err != nil {
+		return errors.New("save dish failed")
+	}
+	return nil
+}

@@ -399,3 +399,56 @@ func (h *ShopHandler) GetAllRevenueByShopID(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"revenue": revenue})
 }
+
+// UpdateShopInfo 更新店铺资料
+func (h *ShopHandler) UpdateShopInfo(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var request struct {
+		ShopID        int     `json:"shop_id"`
+		ShopName      string  `json:"shop_name"`
+		DeliveryRange float64 `json:"delivery_range"`
+		DeliveryFee   float64 `json:"delivery_fee"`
+		BusinessHours string  `json:"business_hours"`
+		Type          int     `json:"type"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	err := h.svc.UpdateShopInfo(request.ShopID, request.ShopName, request.DeliveryRange, request.DeliveryFee, request.BusinessHours, request.Type)
+	logger.Info("err", err)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Shop info updated"})
+}
+
+// SaveDish 保存菜品
+func (h *ShopHandler) SaveDish(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var request struct {
+		DishID   int     `json:"dish_id"`
+		DishName string  `json:"dish_name"`
+		Price    float64 `json:"price"`
+		Stock    int     `json:"stock"`
+		Status   int     `json:"status"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	err := h.svc.SaveDish(request.DishID, request.DishName, request.Price, request.Stock, request.Status)
+	logger.Info("err", err)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Dish saved"})
+}

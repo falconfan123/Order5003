@@ -47,3 +47,21 @@ func GetTodayFinishOrderByShopID(db *gorm.DB, shopID int) ([]model.OrderEntity, 
 	}
 	return list, nil
 }
+
+// GetOrderWaitingForDeliver 查询待配送的订单
+func GetOrderWaitingForDeliver(db *gorm.DB) ([]model.OrderEntity, error) {
+	var list []model.OrderEntity
+	if err := db.Model(&model.OrderEntity{}).Where("status = ?", model.OrderStatusWaitingForDelivery).Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+// GetOrderByOrderID 根据订单ID查询订单
+func GetOrderByOrderID(db *gorm.DB, orderID int) (*model.OrderEntity, error) {
+	var order model.OrderEntity
+	if err := db.Where("order_id = ?", orderID).First(&order).Error; err != nil {
+		return nil, err
+	}
+	return &order, nil
+}

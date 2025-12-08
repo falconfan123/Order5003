@@ -53,6 +53,10 @@ type ShopService interface {
 	GetAllOrderCountByShopID(shopID int) ([]bizmodel.OrderCountAll, error)
 	//获取历史所有营业额
 	GetAllRevenueByShopID(shopID int) ([]bizmodel.RevenueCountAll, error)
+	//更新店铺资料
+	UpdateShopInfo(shopID int, shopName string, deliveryRange float64, deliveryFee float64, businessHours string, shopType int) error
+	//保存菜品
+	SaveDish(dishID int, dishName string, price float64, stock int, status int) error
 }
 
 type UserService interface {
@@ -64,4 +68,7 @@ type UserService interface {
 
 type DelivererService interface {
 	GetDelivererByName(name string) (bizmodel.Deliverers, error)
+	GetOrderWaitingForDeliver() ([]bizmodel.Order, error)
+	AcceptOrderDeliver(deliverID int, orderID int) error
+	GetMyOrder(deliverID int) ([]bizmodel.Order, error)
 }

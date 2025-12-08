@@ -332,14 +332,19 @@
 
                 <!-- 1. 抢单大厅列表 -->
                 <div v-if="activeTab === 'hall'">
+                    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+                        <el-button size="small" @click="refreshData" :loading="loadingOrders">
+                            <el-icon><Refresh /></el-icon>刷新
+                        </el-button>
+                    </div>
                     <el-empty v-if="hallList.length === 0" description="暂无新订单" :image-size="100"></el-empty>
                     
                     <div v-for="order in hallList" :key="order.orderId" class="order-card">
                         <div class="order-tag">待抢单</div>
                         
                         <div class="card-row">
-                            <div class="restaurant-name">{{ order.restaurantName || order.shopName || order.restaurant || '未知商家' }}</div>
-                            <div class="price-text">¥{{ order.deliveryFee || order.fee || 5 }}</div>
+                            <div class="restaurant-name">{{ order.shop_name || order.shopName || order.restaurantName || order.restaurant || '未知商家' }}</div>
+                            <div class="price-text">¥{{ formatMoney(order.total_amount || order.TotalAmount) }}</div>
                         </div>
                         
                         <div class="info-row">
@@ -353,8 +358,8 @@
                         </div>
                         
                         <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #eee; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #999;">
-                            <span>单号 #{{ order.orderId || order.id || '---' }}</span>
-                            <span>{{ formatTime(order.createdAt || order.createTime) }}</span>
+                            <span>单号 #{{ order.order_id || order.orderId || order.id || '---' }}</span>
+                            <span>{{ formatTime(order.created_at || order.createdAt || order.createTime) }}</span>
                         </div>
 
                         <el-button type="primary" class="action-btn" style="background: var(--primary); border: none;" @click="acceptOrder(order)">
@@ -406,6 +411,7 @@
                 const loadingOrders = ref(false);
                 const activeTab = ref('hall');
                 const allOrders = ref([]);
+                const myOrders = ref([]);
                 const lastError = ref('');
 
                 onMounted(() => {
@@ -432,10 +438,8 @@
                     lastError.value = '';
 
                     const payload = {
-                        phone: loginForm.value.phone,
-                        password: loginForm.value.password,
-                        name: loginForm.value.phone,
-                        username: loginForm.value.phone
+                        username: loginForm.value.phone,
+                        password: loginForm.value.password
                     };
 
                     fetch(`${API_BASE_URL}/deliver/login`, {
@@ -448,15 +452,18 @@
                         return res.json();
                     })
                     .then(data => {
-                        const user = data.data || data;
-                        if(user && (user.deliverer_id || user.id || user.phone)) {
+                        const raw = data.data || data;
+                        const user = {
+                            deliverer_id: raw.deliverer_id ?? raw.deliver_id ?? raw.id ?? 0,
+                            username: raw.username ?? loginForm.value.phone,
+                            name: raw.username ?? loginForm.value.phone
+                        };
+                        if(user.deliverer_id) {
                             currentUser.value = user;
-                            // 确保 name 字段存在
-                            if (!currentUser.value.name && currentUser.value.username) currentUser.value.name = currentUser.value.username;
-                            
                             localStorage.setItem('rider_user', JSON.stringify(user));
                             ElMessage.success('登录成功，准备接单！');
                             fetchOrders();
+                            fetchMyOrders();
                         } else {
                             throw new Error('返回数据格式异常');
                         }
@@ -468,37 +475,77 @@
                     .finally(() => loading.value = false);
                 };
 
-                // 2. 获取订单 (带模拟数据兜底)
+                // 2. 获取订单（抢单大厅）
                 const fetchOrders = () => {
+                    if(!currentUser.value) return;
                     loadingOrders.value = true;
-                    fetch(`${API_BASE_URL}/deliver/orders`)
-                    .then(res => res.json())
+                    const deliverId = currentUser.value.deliverer_id || currentUser.value.deliver_id || currentUser.value.id;
+                    fetch(`${API_BASE_URL}/deliver/getorderwatingfordeliver`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ deliver_id: deliverId, DeliverID: deliverId })
+                    })
+                    .then(res => res.ok ? res.json() : Promise.reject(new Error(`请求错误 ${res.status}`)))
                     .then(data => {
-                        const list = data.data || data;
-                        if(Array.isArray(list) && list.length > 0) {
-                            allOrders.value = list;
-                        } else {
-                            loadFallbackMockData(); 
-                        }
+                        const list = data.orders || data.data || [];
+                        const arr = Array.isArray(list) ? list : [];
+                        const ids = Array.from(new Set(arr.map(o => o.shop_id ?? o.ShopID).filter(Boolean)));
+                        if (ids.length === 0) { allOrders.value = arr; return; }
+                        const tasks = ids.map(id => fetch(`${API_BASE_URL}/shop/getshopnamebyshopid`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ ShopID: id })
+                        }).then(res => res.ok ? res.json() : {}).then(r => ({ id, name: r.shop_name || r.shopName || '' })).catch(() => ({ id, name: '' })));
+                        const userIds = Array.from(new Set(arr.map(o => o.user_id ?? o.UserID).filter(Boolean)));
+                        const addrTasks = userIds.map(uid => fetch(`${API_BASE_URL}/user/getuseraddressbyuserid`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ user_id: uid })
+                        }).then(res => res.ok ? res.json() : {}).then(r => ({ uid, address: r.address || '' })).catch(() => ({ uid, address: '' })));
+                        return Promise.all([Promise.all(tasks), Promise.all(addrTasks)]).then(([nameResults, addrResults]) => {
+                            const nameMap = {};
+                            nameResults.forEach(({ id, name }) => { nameMap[id] = name; });
+                            const addressMap = {};
+                            addrResults.forEach(({ uid, address }) => { addressMap[uid] = address; });
+                            allOrders.value = arr.map(o => {
+                                const sid = o.shop_id ?? o.ShopID;
+                                const sname = nameMap[sid] || o.shop_name || o.shopName || o.restaurantName || o.restaurant || '';
+                                const uid = o.user_id ?? o.UserID;
+                                const addr = addressMap[uid] || o.address || o.userAddress || '';
+                                return { ...o, shop_name: sname, address: addr };
+                            });
+                        });
                     })
                     .catch(e => {
-                        console.error("同步订单失败，使用模拟数据", e);
-                        loadFallbackMockData();
+                        console.error('获取待配送订单失败：', e);
+                        ElMessage.error('获取待配送订单失败');
+                        allOrders.value = [];
                     })
                     .finally(() => loadingOrders.value = false);
                 };
 
-                // 自动兜底的模拟数据逻辑
-                const loadFallbackMockData = () => {
-                    if(allOrders.value.length > 0) return;
-                    
-                    const mocks = [
-                        { orderId: 'M-1001', restaurantName: '茶颜悦色 (模拟数据)', address: '科技园A座 1001', items: '幽兰拿铁 x2', deliveryFee: 6, status: 4, createdAt: new Date().toISOString(), isMock: true },
-                        { orderId: 'M-1002', restaurantName: '肯德基 (模拟数据)', address: '幸福家园 5栋 202', items: '香辣鸡腿堡套餐 x1', deliveryFee: 5, status: 4, createdAt: new Date().toISOString(), isMock: true },
-                        { orderId: 'M-1003', restaurantName: '真功夫 (模拟数据)', address: '大学城北区', items: '香菇滑鸡饭 x1', deliveryFee: 4, status: 4, createdAt: new Date().toISOString(), isMock: true }
-                    ];
-                    allOrders.value = mocks;
+                // 获取我的任务列表
+                const fetchMyOrders = () => {
+                    if(!currentUser.value) return;
+                    const deliverId = currentUser.value.deliverer_id || currentUser.value.deliver_id || currentUser.value.id;
+                    fetch(`${API_BASE_URL}/deliver/myorder`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ deliver_id: deliverId })
+                    })
+                    .then(res => res.ok ? res.json() : Promise.reject(new Error(`请求错误 ${res.status}`)))
+                    .then(data => {
+                        const list = data.orders || data.data || [];
+                        myOrders.value = Array.isArray(list) ? list : [];
+                    })
+                    .catch(e => {
+                        console.error('获取我的任务失败：', e);
+                        ElMessage.error('获取我的任务失败');
+                        myOrders.value = [];
+                    });
                 };
+
+                
 
                 // 自动刷新
                 setInterval(() => {
@@ -507,28 +554,21 @@
 
                 // 3. 抢单
                 const acceptOrder = (order) => {
-                    if(order.isMock) {
-                        order.status = 'accepted';
-                        order.courierId = currentUser.value.deliverer_id || currentUser.value.id;
-                        ElMessage.success('模拟抢单成功');
-                        activeTab.value = 'my';
-                        return;
-                    }
-
-                    const orderId = order.orderId || order.id;
+                    const orderId = order.order_id || order.orderId || order.id;
                     const riderId = currentUser.value.deliverer_id || currentUser.value.id;
                     
                     if(!orderId || !riderId) return ElMessage.error("订单信息缺失");
 
-                    fetch(`${API_BASE_URL}/deliver/accept`, {
+                    fetch(`${API_BASE_URL}/deliver/acceptorderdeliver`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ orderId, delivererId: riderId })
+                        body: JSON.stringify({ order_id: orderId, deliver_id: riderId })
                     })
-                    .then(res => res.json())
+                    .then(res => res.ok ? res.json() : Promise.reject(new Error(`请求错误 ${res.status}`)))
                     .then(data => {
                         ElMessage.success('抢单成功！请尽快前往商家');
                         fetchOrders();
+                        fetchMyOrders();
                         activeTab.value = 'my';
                     })
                     .catch(() => ElMessage.error('抢单失败，可能已被抢走'));
@@ -536,19 +576,7 @@
 
                 // 4. 完成
                 const completeOrder = (order) => {
-                    if(order.isMock) {
-                        ElMessageBox.confirm('确认已将餐品送达用户手中？', '送达确认', {
-                            confirmButtonText: '确定',
-                            cancelButtonText: '取消',
-                            type: 'success'
-                        }).then(() => {
-                            order.status = 'completed';
-                            ElMessage.success('模拟完成');
-                        }).catch(() => {});
-                        return;
-                    }
-
-                    const orderId = order.orderId || order.id;
+                    const orderId = order.order_id || order.orderId || order.id;
                     ElMessageBox.confirm('确认已将餐品送达用户手中？', '送达确认', {
                         confirmButtonText: '确定',
                         cancelButtonText: '取消',
@@ -609,26 +637,25 @@
                     return d.getHours().toString().padStart(2,0) + ':' + d.getMinutes().toString().padStart(2,0);
                 };
 
+                const formatMoney = (v) => {
+                    const n = typeof v === 'string' ? parseFloat(v) : Number(v);
+                    return isNaN(n) ? '0.00' : n.toFixed(2);
+                };
+
                 const hallList = computed(() => {
                     return allOrders.value.filter(o => o.status == 4 || o.status === '4' || o.status === 'pending');
                 });
 
                 const myList = computed(() => {
-                    if(!currentUser.value) return [];
-                    const myId = currentUser.value.deliverer_id || currentUser.value.id;
-                    return allOrders.value.filter(o => {
-                        const isMyOrder = o.courierId == myId || o.delivererId == myId;
-                        const isActive = ['accepted', 'delivering', 'completed', 1, 2].includes(o.status);
-                        if(o.isMock && o.courierId == myId) return true;
-                        return isMyOrder && isActive;
-                    });
+                    return myOrders.value;
                 });
 
                 return {
                     loginForm, currentUser, loading, loadingOrders, handleLogin, logout, handleCommand,
                     activeTab, hallList, myList,
                     acceptOrder, completeOrder, refreshData, lastError,
-                    getStatusText, formatItems, formatTime, getDisplayName, getAvatarText
+                    getStatusText, formatItems, formatTime, formatMoney, getDisplayName, getAvatarText,
+                    fetchOrders, fetchMyOrders
                 };
             }
         }).use(ElementPlus).mount('#app');
