@@ -1,10 +1,7 @@
 package dao
 
 import (
-	"Order5003/internal/logger"
 	"Order5003/internal/model"
-	"runtime"
-	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -27,16 +24,6 @@ func ListShops(db *gorm.DB) ([]model.ShopEntity, error) {
 }
 
 func GetShopByID(db *gorm.DB, id int) (*model.ShopEntity, error) {
-	pc, file, line, ok := runtime.Caller(1)
-	callerInfo := "unknown caller"
-	if ok {
-		funcName := runtime.FuncForPC(pc).Name()
-		// 简化函数名（去掉包路径）
-		funcName = funcName[strings.LastIndex(funcName, "/")+1:]
-		callerInfo = funcName + " (" + file + ":" + string(rune(line)) + ")"
-	}
-	logger.Info("GetShopByID id", id, "caller", callerInfo)
-
 	var e model.ShopEntity
 	if err := db.Where("shop_id = ?", id).First(&e).Error; err != nil {
 		return nil, err

@@ -563,7 +563,7 @@
                   <el-button size="small" disabled>待配送</el-button>
                 </template>
                 <template v-else-if="o.status === 5">
-                  <el-button size="small" type="success" @click="setStatus(o, 6)" :loading="operLoading">确认送达</el-button>
+                  <el-button size="small" disabled>配送中</el-button>
                 </template>
               </div>
             </div>

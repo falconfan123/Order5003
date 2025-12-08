@@ -452,3 +452,25 @@ func (h *ShopHandler) SaveDish(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Dish saved"})
 }
+
+// GetShopInfoForUser 获取指定店铺的对用户展示的资料
+func (h *ShopHandler) GetShopInfoForUser(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var request struct {
+		ShopID int `json:"shop_id"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	shop, err := h.svc.GetShopInfoForUser(request.ShopID)
+	logger.Info("shop", shop)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"shop_phone": shop.Phone, "shop_name": shop.ShopName})
+}

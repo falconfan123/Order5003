@@ -222,6 +222,15 @@
             </div>
             <div style="padding:10px;text-align:center;color:#999;cursor:pointer;" @click="addNewAddress"><el-icon><plus /></el-icon> 新增地址</div>
         </el-dialog>
+        <el-dialog v-model="contactDialogVisible" title="商家联系方式" width="400px">
+            <div style="padding:10px;line-height:1.8;">
+                <div>商家：{{ contactInfo.name || '未知商家' }}</div>
+                <div>电话：{{ contactInfo.phone || '暂无' }}</div>
+            </div>
+            <template #footer>
+                <el-button type="primary" @click="contactDialogVisible=false">知道了</el-button>
+            </template>
+        </el-dialog>
 
         <!-- Header -->
         <header v-if="currentUser" class="app-header">
@@ -325,12 +334,12 @@
                             <!-- 修复：根据status_text判断是否显示取消按钮 -->
                             <el-button 
                                 v-if="['待支付', '待接单', '准备中', '配送中'].includes(order.status_text)" 
-                                size="小" 
+                                size="small" 
                                 type="danger" 
                                 plain 
                                 @click="cancelOrder(order)"
                             >取消订单</el-button>
-                            <el-button size="small">联系商家</el-button>
+                            <el-button size="small" @click="contactShop(order)">联系商家</el-button>
                             <el-button type="primary" size="small" plain @click="orderAgain(order)">再来一单</el-button>
                         </div>
                     </div>
@@ -783,6 +792,26 @@
                     return pick.map(d => ({ dish_id: d.id, quantity: 1, price: d.price }));
                 };
 
+                const contactDialogVisible = ref(false);
+                const contactInfo = ref({ name: '', phone: '' });
+                const contactShop = async (order) => {
+                    try {
+                        const shopId = order.shop_id ?? order.ShopID;
+                        if (!shopId) { ElMessage.error('缺少商家信息'); return; }
+                        const res = await fetch('/shop/getshopinfoforuser', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ shop_id: shopId })
+                        });
+                        if (!res.ok) throw new Error('请求失败');
+                        const data = await res.json();
+                        contactInfo.value = { name: data.shop_name || '', phone: data.shop_phone || '' };
+                        contactDialogVisible.value = true;
+                    } catch (e) {
+                        ElMessage.error('获取商家信息失败');
+                    }
+                };
+
                 const orderAgain = async (order) => {
                     try {
                         const orderId = order.order_id ?? order.OrderID ?? order.id;
@@ -845,6 +874,7 @@
                     categories, searchKeyword, currentCategory, handleCategoryClick, currentSort, handleSort,
                     locationDialogVisible, currentAddress, mockAddresses, selectAddress, addNewAddress,
                     showOrderHistory, orders, loadingOrders, openOrderList, closeOrderList, cancelOrder, orderAgain,
+                    contactDialogVisible, contactInfo, contactShop,
                     payOrder,
                     User, Lock,
                     JSON // 暴露JSON用于模板调试

@@ -306,3 +306,15 @@ func (s *GormStore) SaveDish(dishID int, dishName string, price float64, stock i
 	}
 	return nil
 }
+
+// GetShopInfoForUser 获取指定店铺的对用户展示的资料
+func (s *GormStore) GetShopInfoForUser(shopID int) (bizmodel.Shop, error) {
+	shopEntity, err := dao.GetShopByID(s.db, shopID)
+	if err != nil {
+		return bizmodel.Shop{}, errors.New("get shop info failed")
+	}
+	return bizmodel.Shop{
+		ShopName: shopEntity.ShopName,
+		Phone:    shopEntity.Phone,
+	}, nil
+}

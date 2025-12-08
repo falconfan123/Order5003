@@ -58,6 +58,8 @@ type ShopService interface {
 	UpdateShopInfo(shopID int, shopName string, deliveryRange float64, deliveryFee float64, businessHours string, shopType int) error
 	//保存菜品
 	SaveDish(dishID int, dishName string, price float64, stock int, status int) error
+	//对用户展示的商家资料
+	GetShopInfoForUser(shopID int) (bizmodel.Shop, error)
 }
 
 type UserService interface {

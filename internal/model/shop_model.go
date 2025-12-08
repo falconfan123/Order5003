@@ -16,6 +16,7 @@ type ShopEntity struct {
 	CreatedAt     time.Time       `gorm:"column:created_at" comment:"创建时间"`
 	Password      string          `gorm:"column:password" comment:"商家明文密码"`
 	Type          int8            `gorm:"column:type;not null;default:0" comment:"商家分类类型：0=全部，1=甜品奶茶，2=炸鸡汉堡，3=美味中餐，4=生活百货"`
+	Phone         string          `gorm:"column:phone;" comment:"手机号"`
 }
 
 func (ShopEntity) TableName() string { return "shops" }

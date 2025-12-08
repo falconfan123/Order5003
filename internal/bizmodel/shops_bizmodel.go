@@ -14,4 +14,5 @@ type Shop struct {
 	CreatedAt     *time.Time `json:"created_at"`
 	Password      string     `json:"password"`
 	Type          int        `json:"type"`
+	Phone         string     `json:"phone"`
 }

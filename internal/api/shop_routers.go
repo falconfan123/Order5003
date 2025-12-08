@@ -42,4 +42,6 @@ func RegisterShopRoutes(r *gin.Engine, h *handlers.ShopHandler) {
 	g.POST("/updateshopinfo", func(c *gin.Context) { h.UpdateShopInfo(c) })
 	// 保存菜品
 	g.POST("/savedish", func(c *gin.Context) { h.SaveDish(c) })
+	// 对用户展示的商家资料
+	g.POST("/getshopinfoforuser", func(c *gin.Context) { h.GetShopInfoForUser(c) })
 }
