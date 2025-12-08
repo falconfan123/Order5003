@@ -324,8 +324,8 @@
                             >支付</el-button>
                             <!-- 修复：根据status_text判断是否显示取消按钮 -->
                             <el-button 
-                                v-if="['待接单', '准备中', '配送中'].includes(order.status_text)" 
-                                size="small" 
+                                v-if="['待支付', '待接单', '准备中', '配送中'].includes(order.status_text)" 
+                                size="小" 
                                 type="danger" 
                                 plain 
                                 @click="cancelOrder(order)"
