@@ -65,17 +65,18 @@ Order5003/
 
 ```bash
 # 启动服务器
-go run cmd/api/main.go
+go run cmd/server/main.go
 ```
 
 4. 打开浏览器访问以下地址：
-   - 顾客端：http://localhost:8080
-   - 商家端：http://localhost:8080/merchant
+   - 顾客端：http://localhost:8080/user
+   - 商家端：http://localhost:8080/shop
+   - 骑手断：http://localhost:8080/deliver
 
 ## 商家端登录信息
 
 - 用户名：admin
-- 密码：password
+- 密码：admin
 
 ## 注意事项
 
