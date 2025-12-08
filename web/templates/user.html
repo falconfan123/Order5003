@@ -658,6 +658,14 @@
                                 if (!Array.isArray(data)) { list = [data]; } else { list = data; }
                             }
                             console.log('格式化前订单列表：', list);
+                            list = list.slice().sort((a, b) => {
+                                const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+                                const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+                                if (tb !== ta) return tb - ta;
+                                const ida = Number(a.order_id || 0);
+                                const idb = Number(b.order_id || 0);
+                                return idb - ida;
+                            });
                             const statusMap = { 0: '未下单', 1: '待支付', 2: '待接单', 3: '已自我取消', 4: '待配送', 5: '配送中', 6: '已完成', 7: '已被商家取消', 8: '备餐中' };
                             const formatTime = (timeStr) => { if (!timeStr) return '未知时间'; try { return new Date(timeStr).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch (e) { return timeStr; } };
                             orders.value = list.map(o => ({
@@ -776,24 +784,37 @@
                 };
 
                 const orderAgain = async (order) => {
-                    const sid = order.shop_id ?? order.ShopID;
-                    const sname = order.shop_name ?? `商家ID:${sid}`;
-                    let targetShop = shops.value.find(s => s.shop_id === sid);
-                    if (!targetShop) targetShop = { shop_id: sid, shop_name: sname, status: 1 };
-                    showOrderHistory.value = false;
-                    switchToShop(targetShop);
-                    await fetchMenu(targetShop.shop_id);
-                    let items = Array.isArray(order.dishes) ? order.dishes : await mockOrderItems(order, targetShop.shop_id);
-                    cart.value = [];
-                    items.forEach(it => {
-                        const did = it.dish_id ?? it.id;
-                        const m = menuItems.value.find(d => d.id === did);
-                        const name = m ? m.name : `菜品#${did}`;
-                        const price = m ? m.price : (it.price ?? 0);
-                        const qty = it.quantity ?? 1;
-                        cart.value.push({ id: did, name, price, quantity: qty, shop_id: targetShop.shop_id });
-                    });
-                    ElMessage.success('已将订单菜品加入购物车');
+                    try {
+                        const orderId = order.order_id ?? order.OrderID ?? order.id;
+                        if (!orderId) { ElMessage.error('缺少订单ID'); return; }
+                        const resp = await fetch('/orders/getshopidbyorderid', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ order_id: orderId })
+                        });
+                        if (!resp.ok) { ElMessage.error('获取商家ID失败'); return; }
+                        const data = await resp.json();
+                        const shopId = data.shop_id ?? data.ShopID;
+                        if (!shopId) { ElMessage.error('接口未返回shop_id'); return; }
+                        let targetShop = shops.value.find(s => s.shop_id === shopId);
+                        if (!targetShop) targetShop = { shop_id: shopId, shop_name: `商家ID:${shopId}`, status: 1 };
+                        showOrderHistory.value = false;
+                        switchToShop(targetShop);
+                        await fetchMenu(targetShop.shop_id);
+                        let items = Array.isArray(order.dishes) ? order.dishes : await mockOrderItems(order, targetShop.shop_id);
+                        cart.value = [];
+                        items.forEach(it => {
+                            const did = it.dish_id ?? it.id;
+                            const m = menuItems.value.find(d => d.id === did);
+                            const name = m ? m.name : `菜品#${did}`;
+                            const price = m ? m.price : (it.price ?? 0);
+                            const qty = it.quantity ?? 1;
+                            cart.value.push({ id: did, name, price, quantity: qty, shop_id: shopId });
+                        });
+                        ElMessage.success('已将订单菜品加入购物车');
+                    } catch (e) {
+                        ElMessage.error('再来一单失败');
+                    }
                 };
 
                 // 筛选逻辑

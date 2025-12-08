@@ -178,3 +178,24 @@ func (h *OrderHandler) GetDishesByOrderID(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, orderDishDetails)
 }
+
+func (h *OrderHandler) GetShopIDByOrderID(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	logger.Info("GetShopIDByOrderID, request URL: %s, request body: %s", c.Request.URL, c.Request.Body)
+	var req struct {
+		OrderID int `json:"order_id"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+	shopID, err := h.svc.GetShopIdByOrderId(c.Request.Context(), req.OrderID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"shop_id": shopID})
+}

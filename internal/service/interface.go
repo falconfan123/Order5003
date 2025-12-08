@@ -20,6 +20,7 @@ type OrderService interface {
 	CreateOrderMaster(ctx context.Context, tx *gorm.DB, orderMaster *bizmodel.Order) (int, error)
 	CreateOrderDish(ctx context.Context, tx *gorm.DB, orderDish *bizmodel.OrderDishDetail) error
 	GetOrderDishesByOrderID(ctx context.Context, orderID int) ([]bizmodel.OrderDishDetail, error)
+	GetShopIdByOrderId(ctx context.Context, orderID int) (int, error)
 }
 
 type ShopService interface {

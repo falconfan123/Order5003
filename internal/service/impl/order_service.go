@@ -164,3 +164,14 @@ func (s *GormStore) CancelOrder(userID int, orderID int) error {
 	}
 	return nil
 }
+
+func (s *GormStore) GetShopIdByOrderId(ctx context.Context, orderID int) (int, error) {
+	orderEntity, err := dao.GetOrderByOrderID(s.db, orderID)
+	if err != nil {
+		return 0, fmt.Errorf("service查询订单主表失败：%v", err)
+	}
+	if orderEntity == nil {
+		return 0, nil
+	}
+	return orderEntity.ShopID, nil
+}
