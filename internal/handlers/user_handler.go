@@ -81,3 +81,72 @@ func (h *UserHandler) GetUserAddressByUserID(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"address": address})
 }
+
+// GetUserPhoneByUserID 获取用户ID对应的电话
+func (h *UserHandler) GetUserPhoneByUserID(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var request struct {
+		UserID int `json:"user_id"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	phone, err := h.svc.GetUserPhoneByUserID(request.UserID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"phone": phone})
+}
+
+// PayOrder 支付订单
+func (h *UserHandler) PayOrder(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var request struct {
+		UserID  int `json:"user_id"`
+		OrderID int `json:"order_id"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	err := h.svc.PayOrder(request.UserID, request.OrderID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Order paid",
+	})
+}
+
+// CancelOrder 取消订单
+func (h *UserHandler) CancelOrder(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var request struct {
+		UserID  int `json:"user_id"`
+		OrderID int `json:"order_id"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	err := h.svc.CancelOrder(request.UserID, request.OrderID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Order cancelled",
+	})
+}

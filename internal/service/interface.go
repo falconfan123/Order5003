@@ -64,6 +64,9 @@ type UserService interface {
 	GetUserByID(id int) (bizmodel.User, error)
 	GetUsernameByUserID(userID int) (string, error)
 	GetUserAddressByUserID(userID int) (string, error)
+	GetUserPhoneByUserID(userID int) (string, error)
+	PayOrder(userID int, orderID int) error
+	CancelOrder(userID int, orderID int) error
 }
 
 type DelivererService interface {
@@ -71,4 +74,5 @@ type DelivererService interface {
 	GetOrderWaitingForDeliver() ([]bizmodel.Order, error)
 	AcceptOrderDeliver(deliverID int, orderID int) error
 	GetMyOrder(deliverID int) ([]bizmodel.Order, error)
+	ConfirmDeliver(deliverID int, orderID int) error
 }

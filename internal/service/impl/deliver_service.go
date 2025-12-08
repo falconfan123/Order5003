@@ -72,3 +72,14 @@ func (s *GormStore) GetMyOrder(deliverID int) ([]bizmodel.Order, error) {
 	}
 	return out, nil
 }
+
+func (s *GormStore) ConfirmDeliver(deliverID int, orderID int) error {
+	//更改delivery表下的信息
+	err := dao.ConfirmDeliver(s.db, deliverID, orderID)
+	//更改order表下的信息
+	err = dao.UpdateOrderStatus(s.db, orderID, int(model.OrderStatusCompleted))
+	if err != nil {
+		return errors.New("internal server error")
+	}
+	return nil
+}

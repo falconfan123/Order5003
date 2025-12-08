@@ -316,6 +316,12 @@
                             </div>
                         </div>
                         <div style="text-align:right;margin-top:15px;border-top:1px solid #f9f9f9;padding-top:10px;">
+                            <el-button 
+                                v-if="order.status_text === '待支付'" 
+                                size="small" 
+                                type="primary" 
+                                @click="payOrder(order)"
+                            >支付</el-button>
                             <!-- 修复：根据status_text判断是否显示取消按钮 -->
                             <el-button 
                                 v-if="['待接单', '准备中', '配送中'].includes(order.status_text)" 
@@ -722,10 +728,11 @@
                         type: 'warning'
                     }).then(() => {
                         const orderId = order.order_id; 
-                        fetch('/api/orders/cancel', {
+                        const userId = currentUser.value?.id;
+                        fetch('/user/cancelorder', {
                             method: 'POST',
                             headers: {'Content-Type':'application/json'},
-                            body: JSON.stringify({ order_id: orderId })
+                            body: JSON.stringify({ user_id: userId, order_id: orderId })
                         })
                         .then(res => {
                             if (res.ok) {
@@ -736,6 +743,29 @@
                             }
                         })
                         .catch(() => ElMessage.error('网络错误'));
+                    }).catch(() => {});
+                };
+
+                const payOrder = (order) => {
+                    ElMessageBox.confirm('是否支付此订单', '支付确认', {
+                        confirmButtonText: '确认',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        const orderId = order.order_id;
+                        const userId = currentUser.value?.id;
+                        if (!orderId || !userId) { ElMessage.error('支付信息缺失'); return; }
+                        fetch('/user/payorder', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ user_id: userId, order_id: orderId })
+                        })
+                        .then(res => { if (!res.ok) throw new Error('支付失败'); return res.json(); })
+                        .then(() => {
+                            ElMessage.success('支付成功');
+                            order.status_text = '待接单';
+                        })
+                        .catch(() => ElMessage.error('支付失败'));
                     }).catch(() => {});
                 };
 
@@ -794,6 +824,7 @@
                     categories, searchKeyword, currentCategory, handleCategoryClick, currentSort, handleSort,
                     locationDialogVisible, currentAddress, mockAddresses, selectAddress, addNewAddress,
                     showOrderHistory, orders, loadingOrders, openOrderList, closeOrderList, cancelOrder, orderAgain,
+                    payOrder,
                     User, Lock,
                     JSON // 暴露JSON用于模板调试
                 };

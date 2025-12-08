@@ -144,3 +144,23 @@ func (s *GormStore) GetOrderDishesByOrderID(ctx context.Context, orderID int) ([
 	}
 	return orderDishDetails, nil
 }
+
+// CancelOrder 取消订单
+func (s *GormStore) CancelOrder(userID int, orderID int) error {
+	//先判断userID和orderID对没对上
+	orderEntity, err := dao.GetOrderByOrderID(s.db, orderID)
+	if err != nil {
+		return errors.New("internal server error")
+	}
+	if orderEntity == nil {
+		return errors.New("order not found")
+	}
+	if orderEntity.UserID != userID {
+		return errors.New("user not authorized")
+	}
+	//改变订单状态为已自我取消
+	if err := dao.UpdateOrderStatus(s.db, orderID, int(bizmodel.OrderStatusSelfCancelled)); err != nil {
+		return errors.New("internal server error")
+	}
+	return nil
+}

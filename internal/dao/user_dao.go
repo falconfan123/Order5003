@@ -29,3 +29,12 @@ func GetUserAddressByUserID(db *gorm.DB, userID int) (*model.UserEntity, error) 
 	}
 	return &e, nil
 }
+
+// GetUserPhoneByUserID 根据用户ID查询用户电话
+func GetUserPhoneByUserID(db *gorm.DB, userID int) (*model.UserEntity, error) {
+	var e model.UserEntity
+	if err := db.Where("user_id = ?", userID).First(&e).Error; err != nil {
+		return nil, err
+	}
+	return &e, nil
+}

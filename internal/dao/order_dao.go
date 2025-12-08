@@ -65,3 +65,8 @@ func GetOrderByOrderID(db *gorm.DB, orderID int) (*model.OrderEntity, error) {
 	}
 	return &order, nil
 }
+
+// DeleteOrder 删除订单
+func DeleteOrder(db *gorm.DB, orderID int) error {
+	return db.Delete(&model.OrderEntity{}, orderID).Error
+}

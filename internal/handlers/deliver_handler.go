@@ -105,3 +105,27 @@ func (h *DeliverHandler) GetMyOrder(c *gin.Context) {
 		"orders": orders,
 	})
 }
+
+// ConfirmDeliver 确认配送
+func (h *DeliverHandler) ConfirmDeliver(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var confirmRequest struct {
+		DeliverID int `json:"deliver_id"`
+		OrderID   int `json:"order_id"`
+	}
+	if err := c.ShouldBindJSON(&confirmRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	err := h.svc.ConfirmDeliver(confirmRequest.DeliverID, confirmRequest.OrderID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Order confirmed",
+	})
+}

@@ -37,3 +37,18 @@ func GetMyOrder(db *gorm.DB, deliverID int) ([]model.DeliveryEntity, error) {
 	}
 	return deliveries, nil
 }
+
+// ConfirmDeliver 确认配送
+func ConfirmDeliver(db *gorm.DB, deliverID int, orderID int) error {
+	//更改deliveries表下的信息
+	Deliveries := model.DeliveryEntity{
+		DelivererID:    deliverID,
+		OrderID:        orderID,
+		DeliverTime:    time.Now(),
+		DeliveryStatus: 2,
+	}
+	if err := db.Save(&Deliveries).Error; err != nil {
+		return err
+	}
+	return nil
+}

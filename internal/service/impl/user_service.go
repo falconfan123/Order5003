@@ -3,6 +3,7 @@ package impl
 import (
 	"Order5003/internal/bizmodel"
 	"Order5003/internal/dao"
+	"Order5003/internal/model"
 	"errors"
 )
 
@@ -36,4 +37,22 @@ func (s *GormStore) GetUserAddressByUserID(userID int) (string, error) {
 		return "", errors.New("user not found")
 	}
 	return e.MainAddress, nil
+}
+
+func (s *GormStore) GetUserPhoneByUserID(userID int) (string, error) {
+	e, err := dao.GetUserPhoneByUserID(s.db, userID)
+	if err != nil {
+		return "", errors.New("user not found")
+	}
+	return e.Phone, nil
+}
+
+// PayOrder 支付订单
+func (s *GormStore) PayOrder(userID int, orderID int) error {
+	//更改order表下的信息
+	err := dao.UpdateOrderStatus(s.db, orderID, int(model.OrderStatusWaitingForAccept))
+	if err != nil {
+		return errors.New("internal server error")
+	}
+	return nil
 }

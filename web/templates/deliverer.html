@@ -372,23 +372,27 @@
                 <div v-if="activeTab === 'my'">
                     <el-empty v-if="myList.length === 0" description="暂无进行中的任务"></el-empty>
                     
-                    <div v-for="order in myList" :key="order.orderId" class="order-card" style="border-left: 4px solid var(--primary);">
+                    <div v-for="order in myList" :key="order.order_id || order.orderId || order.id" class="order-card" style="border-left: 4px solid var(--primary);">
                         <div class="card-row">
-                            <el-tag :type="order.status === 'completed' ? 'success' : ''" effect="dark" size="small" style="background-color: var(--primary); border-color: var(--primary);">
+                            <el-tag effect="dark" size="small" style="background-color: var(--primary); border-color: var(--primary);">
                                 {{ getStatusText(order.status) }}
                             </el-tag>
-                            <span style="font-size: 12px; color: #999;">#{{ order.orderId || order.id }}</span>
+                            <span style="font-size: 12px; color: #999;">#{{ order.order_id || order.orderId || order.id }}</span>
                         </div>
                         
-                        <div style="margin: 15px 0;">
-                            <div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">{{ order.address || order.userAddress }}</div>
-                            <div style="color: #666; font-size: 13px;">
-                                <span style="background: #f0f0f0; padding: 2px 6px; border-radius: 4px; margin-right: 5px;">取</span>
-                                {{ order.restaurantName || order.shopName || order.restaurant }}
-                            </div>
+                        <div style="margin: 12px 0; display:flex; justify-content:space-between; align-items:center;">
+                            <div style="font-size: 16px; font-weight: 700; color:#333;">{{ order.address || '未知地址' }}</div>
+                            <div class="price-text">¥{{ formatMoney(order.total_amount || order.TotalAmount) }}</div>
                         </div>
 
-                        <el-button v-if="['delivering', 'accepted'].includes(order.status)" type="success" class="action-btn" @click="completeOrder(order)">
+                        <div style="color:#666; font-size: 13px; display:flex; gap:16px;">
+                            <span>用户：{{ order.username || '未知用户' }}</span>
+                            <span>电话：{{ order.phone || '未知电话' }}</span>
+                        </div>
+
+                        <div style="margin-top:8px; color:#999; font-size:12px;">当前状态：{{ getStatusText(order.status) }}</div>
+
+                        <el-button v-if="[5,'5'].includes(order.status)" type="success" class="action-btn" @click="completeOrder(order)">
                             确认送达
                         </el-button>
                     </div>
@@ -534,9 +538,33 @@
                         body: JSON.stringify({ deliver_id: deliverId })
                     })
                     .then(res => res.ok ? res.json() : Promise.reject(new Error(`请求错误 ${res.status}`)))
-                    .then(data => {
+                    .then(async data => {
                         const list = data.orders || data.data || [];
-                        myOrders.value = Array.isArray(list) ? list : [];
+                        const arr = Array.isArray(list) ? list : [];
+                        const userIds = Array.from(new Set(arr.map(o => o.user_id ?? o.UserID).filter(Boolean)));
+                        if (userIds.length === 0) { myOrders.value = arr; return; }
+                        const unameTasks = userIds.map(uid => fetch(`${API_BASE_URL}/user/getusernamebyuserid`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: uid })
+                        }).then(r => r.ok ? r.json() : {}).then(r => ({ uid, username: r.username || '' })).catch(() => ({ uid, username: '' })));
+                        const addrTasks = userIds.map(uid => fetch(`${API_BASE_URL}/user/getuseraddressbyuserid`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: uid })
+                        }).then(r => r.ok ? r.json() : {}).then(r => ({ uid, address: r.address || '' })).catch(() => ({ uid, address: '' })));
+                        const phoneTasks = userIds.map(uid => fetch(`${API_BASE_URL}/user/getuserphonebyuserid`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: uid })
+                        }).then(r => r.ok ? r.json() : {}).then(r => ({ uid, phone: r.phone || '' })).catch(() => ({ uid, phone: '' })));
+                        const [unames, addrs, phones] = await Promise.all([Promise.all(unameTasks), Promise.all(addrTasks), Promise.all(phoneTasks)]);
+                        const unameMap = {}; unames.forEach(({ uid, username }) => { unameMap[uid] = username; });
+                        const addrMap = {}; addrs.forEach(({ uid, address }) => { addrMap[uid] = address; });
+                        const phoneMap = {}; phones.forEach(({ uid, phone }) => { phoneMap[uid] = phone; });
+                        myOrders.value = arr.map(o => {
+                            const uid = o.user_id ?? o.UserID;
+                            return {
+                                ...o,
+                                username: unameMap[uid] || o.username || '',
+                                address: addrMap[uid] || o.address || '',
+                                phone: phoneMap[uid] || o.phone || ''
+                            };
+                        });
                     })
                     .catch(e => {
                         console.error('获取我的任务失败：', e);
@@ -577,20 +605,27 @@
                 // 4. 完成
                 const completeOrder = (order) => {
                     const orderId = order.order_id || order.orderId || order.id;
+                    const deliverId = currentUser.value?.deliverer_id || currentUser.value?.deliver_id || currentUser.value?.id;
+                    const status = order.status;
+                    if (!(status === 5 || status === '5')) { ElMessage.warning('当前状态不可确认送达'); return; }
+                    if(!orderId || !deliverId) return ElMessage.error('信息缺失，无法确认送达');
                     ElMessageBox.confirm('确认已将餐品送达用户手中？', '送达确认', {
                         confirmButtonText: '确定',
                         cancelButtonText: '取消',
                         type: 'success'
                     }).then(() => {
-                        fetch(`${API_BASE_URL}/deliver/complete`, {
+                        fetch(`${API_BASE_URL}/deliver/confirmdeliver`, {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ orderId })
+                            body: JSON.stringify({ order_id: orderId, deliver_id: deliverId })
                         })
+                        .then(res => res.ok ? res.json() : Promise.reject(new Error(`请求错误 ${res.status}`)))
                         .then(() => {
-                            ElMessage.success('订单完成，辛苦了！');
+                            ElMessage.success('已确认送达');
                             fetchOrders();
-                        });
+                            fetchMyOrders();
+                        })
+                        .catch(e => ElMessage.error(e.message));
                     }).catch(() => {});
                 };
 
@@ -615,12 +650,17 @@
 
                 const getStatusText = (status) => {
                     const map = {
-                        'pending': '待接单', 0: '待接单',
-                        4: '待抢单', '4': '待抢单',
-                        'accepted': '配送中', 'delivering': '配送中',
-                        'completed': '已完成'
+                        0: '未下单', '0': '未下单',
+                        1: '待支付', '1': '待支付',
+                        2: '待接单', '2': '待接单',
+                        3: '已自我取消', '3': '已自我取消',
+                        4: '待配送', '4': '待配送',
+                        5: '配送中', '5': '配送中',
+                        6: '已完成', '6': '已完成',
+                        7: '已被商家取消', '7': '已被商家取消',
+                        8: '备餐中', '8': '备餐中'
                     };
-                    return map[status] || status;
+                    return map[status] ?? String(status);
                 };
 
                 const formatItems = (order) => {

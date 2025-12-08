@@ -13,4 +13,5 @@ func RegisterDeliverRoutes(r *gin.Engine, h *handlers.DeliverHandler) {
 	g.POST("/getorderwatingfordeliver", func(c *gin.Context) { h.GetOrderWaitingForDeliver(c) })
 	g.POST("/acceptorderdeliver", func(c *gin.Context) { h.AcceptOrderDeliver(c) })
 	g.POST("/myorder", func(c *gin.Context) { h.GetMyOrder(c) })
+	g.POST("/confirmdeliver", func(c *gin.Context) { h.ConfirmDeliver(c) })
 }
