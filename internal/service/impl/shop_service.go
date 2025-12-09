@@ -318,3 +318,23 @@ func (s *GormStore) GetShopInfoForUser(shopID int) (bizmodel.Shop, error) {
 		Phone:    shopEntity.Phone,
 	}, nil
 }
+
+// AddDish 新增菜品
+func (s *GormStore) AddDish(shopID int, menuName string, dishName string, price float64, stock int, status int) error {
+	// 1. 调用AddDish函数添加菜品，获取生成的dishID
+	dishID, err := dao.AddDish(s.db, shopID, dishName, price, stock, status)
+	if err != nil {
+		return errors.New("add dish failed")
+	}
+	//把创建的菜品添加到对应的菜单
+	//先根据菜单名称获取菜单ID
+	menuID, err := dao.GetMenuIDByMenuName(s.db, shopID, menuName)
+	if err != nil {
+		return errors.New("add dish to menu failed")
+	}
+	//根据菜单ID添加菜品到菜单
+	if err := dao.AddDishToMenu(s.db, menuID, dishID); err != nil {
+		return errors.New("add dish to menu failed")
+	}
+	return nil
+}

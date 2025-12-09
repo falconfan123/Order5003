@@ -474,3 +474,29 @@ func (h *ShopHandler) GetShopInfoForUser(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"shop_phone": shop.Phone, "shop_name": shop.ShopName})
 }
+
+func (h *ShopHandler) AddDish(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var request struct {
+		DishName string  `json:"dish_name"`
+		Price    float64 `json:"price"`
+		Stock    int     `json:"stock"`
+		Status   int     `json:"status"`
+		ShopID   int     `json:"shop_id"`
+		MenuName string  `json:"menu_name"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	err := h.svc.AddDish(request.ShopID, request.MenuName, request.DishName, request.Price, request.Stock, request.Status)
+	logger.Info("err", err)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Dish added"})
+}

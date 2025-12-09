@@ -712,6 +712,11 @@
             style="width: 180px;"
           ></el-input-number>
         </el-form-item>
+        <el-form-item label="所属菜单" v-if="!editForm.dish_id">
+          <el-select v-model="editForm.menu_name" placeholder="选择菜单" style="width: 180px;">
+            <el-option v-for="m in menus" :key="m.menu_id" :label="m.menu_name" :value="m.menu_name" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="状态">
           <el-radio-group v-model="editForm.status">
             <el-radio :label="1">在售</el-radio>
@@ -1577,7 +1582,8 @@
           dish_name: '',
           price: 0,
           stock: 0,
-          status: 1
+          status: 1,
+          menu_name: this.currentMenuName
         };
         this.editDialogVisible = true;
       },
@@ -1662,9 +1668,16 @@
               dish_name: this.editForm.dish_name.trim(),
               price: this.editForm.price,
               stock: this.editForm.stock,
-              status: this.editForm.status
+              status: this.editForm.status,
+              shop_id: this.editForm.shop_id,
+              menu_name: this.editForm.menu_name
             };
-            await this.request('/dish/add', {
+            if (!body.menu_name) {
+              ElementPlus.ElMessage.warning('请选择所属菜单');
+              this.operLoading = false;
+              return;
+            }
+            await this.request('/shop/adddish', {
               method: 'POST',
               body: JSON.stringify(body)
             });

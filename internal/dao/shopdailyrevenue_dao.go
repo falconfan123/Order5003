@@ -8,6 +8,7 @@ import (
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // GetShopDailyRevenueByShopIDAndDate 根据店铺ID和日期查询店铺的日营业额记录
@@ -40,7 +41,13 @@ func UpdateShopDailyRevenueCount(db *gorm.DB, existing model.ShopDailyRevenue, c
 
 // CreateShopDailyRevenue 创建店铺的日营业额记录
 func CreateShopDailyRevenue(db *gorm.DB, shopDailyRevenue model.ShopDailyRevenue) error {
-	if err := db.Create(&shopDailyRevenue).Error; err != nil {
+	err := db.Clauses(clause.OnConflict{
+		OnConstraint: "uk_shop_date",
+		DoUpdates: clause.Assignments(map[string]interface{}{
+			"order_count": shopDailyRevenue.OrderCount,
+		}),
+	}).Create(&shopDailyRevenue).Error
+	if err != nil {
 		return err
 	}
 	return nil

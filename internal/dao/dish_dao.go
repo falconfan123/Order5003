@@ -5,6 +5,7 @@ import (
 	"Order5003/internal/model"
 	"context"
 
+	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
 
@@ -72,4 +73,21 @@ func GetDishesByIDs(db *gorm.DB, dishIDs []int) ([]model.DishEntity, error) {
 // UpdateDishStatus 更新菜品状态
 func UpdateDishStatus(db *gorm.DB, dishID int, status int) error {
 	return db.Model(&model.DishEntity{}).Where("dish_id = ?", dishID).Update("status", status).Error
+}
+
+// AddDish 添加菜品
+func AddDish(db *gorm.DB, shopID int, dishName string, price float64, stock int, status int) (int, error) {
+	dish := &model.DishEntity{
+		ShopID:   shopID,
+		DishName: dishName,
+		Price:    decimal.NewFromFloat(price),
+		Stock:    stock,
+		Status:   int8(status),
+	}
+	// 2. 执行创建操作，Gorm会自动将生成的dish_id赋值给dish.DishID
+	if err := db.Create(dish).Error; err != nil {
+		return 0, err // 创建失败，返回0和错误
+	}
+	// 3. 返回生成的dish_id和nil（无错误）
+	return dish.DishID, nil
 }

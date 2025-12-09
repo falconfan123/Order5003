@@ -60,6 +60,8 @@ type ShopService interface {
 	SaveDish(dishID int, dishName string, price float64, stock int, status int) error
 	//对用户展示的商家资料
 	GetShopInfoForUser(shopID int) (bizmodel.Shop, error)
+	//新增菜品
+	AddDish(shopID int, menuName string, dishName string, price float64, stock int, status int) error
 }
 
 type UserService interface {
