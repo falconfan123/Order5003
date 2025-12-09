@@ -13,6 +13,8 @@ func RegisterUserRoutes(r *gin.Engine, h *handlers.UserHandler) {
 	g.POST("/getusernamebyuserid", func(c *gin.Context) { h.GetUsernameByUserID(c) })
 	//显示用户地址
 	g.POST("/getuseraddressbyuserid", func(c *gin.Context) { h.GetUserAddressByUserID(c) })
+	// 更改用户地址
+	g.POST("/updateuseraddressbyuserid", func(c *gin.Context) { h.UpdateUserAddressByUserID(c) })
 	//显示用户电话
 	g.POST("/getuserphonebyuserid", func(c *gin.Context) { h.GetUserPhoneByUserID(c) })
 	//支付订单

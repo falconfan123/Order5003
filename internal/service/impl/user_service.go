@@ -56,3 +56,12 @@ func (s *GormStore) PayOrder(userID int, orderID int) error {
 	}
 	return nil
 }
+
+// UpdateUserAddressByUserID 更新用户ID对应的地址
+func (s *GormStore) UpdateUserAddressByUserID(userID int, address string) error {
+	err := dao.UpdateUserAddressByUserID(s.db, userID, address)
+	if err != nil {
+		return errors.New("internal server error")
+	}
+	return nil
+}

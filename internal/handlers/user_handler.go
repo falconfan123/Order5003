@@ -150,3 +150,27 @@ func (h *UserHandler) CancelOrder(c *gin.Context) {
 		"message": "Order cancelled",
 	})
 }
+
+// UpdateUserAddressByUserID 更新用户ID对应的地址
+func (h *UserHandler) UpdateUserAddressByUserID(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var request struct {
+		UserID  int    `json:"user_id"`
+		Address string `json:"address"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	err := h.svc.UpdateUserAddressByUserID(request.UserID, request.Address)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Address updated",
+	})
+}

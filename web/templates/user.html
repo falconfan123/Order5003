@@ -213,14 +213,16 @@
             </div>
         </div>
 
-        <!-- 地址选择弹窗 -->
-        <el-dialog v-model="locationDialogVisible" title="选择收货地址" width="400px">
-            <div v-for="(addr, index) in mockAddresses" :key="index" class="address-item" :class="{selected: currentAddress===addr}" @click="selectAddress(addr)">
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <el-icon><location /></el-icon><span>{{ addr }}</span>
-                </div>
+        <!-- 地址更改弹窗 -->
+        <el-dialog v-model="locationDialogVisible" title="更改收货地址" width="400px">
+            <div style="padding:10px;">
+                <el-input v-model="addressEdit" placeholder="请输入收货地址"></el-input>
+                <div style="margin-top:8px;color:#888;font-size:12px;">当前地址：{{ currentAddress || '未设置' }}</div>
             </div>
-            <div style="padding:10px;text-align:center;color:#999;cursor:pointer;" @click="addNewAddress"><el-icon><plus /></el-icon> 新增地址</div>
+            <template #footer>
+                <el-button @click="locationDialogVisible=false">取 消</el-button>
+                <el-button type="primary" @click="saveAddress">保 存</el-button>
+            </template>
         </el-dialog>
         <el-dialog v-model="contactDialogVisible" title="商家联系方式" width="400px">
             <div style="padding:10px;line-height:1.8;">
@@ -238,8 +240,8 @@
                 <div class="brand-logo" @click="backToHome">
                     <div class="brand-logo-icon"><el-icon><food /></el-icon></div><span>饭团外卖</span>
                 </div>
-                <div class="location-selector" @click="locationDialogVisible=true">
-                    <el-icon><location /></el-icon><span>{{ currentAddress }}</span><el-icon><arrow-down /></el-icon>
+                <div class="location-selector" @click="openAddressDialog">
+                    <el-icon><location /></el-icon><span>{{ currentAddress || '未设置' }}</span><el-icon><arrow-down /></el-icon>
                 </div>
             </div>
             <div class="search-bar">
@@ -474,8 +476,8 @@
                 const currentType = ref(0); 
                 const currentSort = ref('default');
                 const locationDialogVisible = ref(false);
-                const currentAddress = ref('233 N Spring St, Los Angeles');
-                const mockAddresses = ref(['233 N Spring St, Los Angeles', 'USC Village', 'Santa Monica Blvd']);
+                const currentAddress = ref('');
+                const addressEdit = ref('');
 
                 const categories = [
                     { name: '全部', type_id: 0, icon: 'Food', color: '#ff6b6b' },
@@ -490,7 +492,7 @@
                     loading.value = true;
                     fetch('/user/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(loginForm) })
                     .then(res => { if(!res.ok) throw new Error(); return res.json(); })
-                    .then(data => { currentUser.value = data; fetchShops(); })
+                    .then(data => { currentUser.value = data; fetchShops(); loadUserAddress(); })
                     .catch(() => ElMessage.error('登录失败'))
                     .finally(() => loading.value = false);
                 };
@@ -862,9 +864,42 @@
                 });
                 
                 // 地址逻辑
-                const selectAddress = (addr) => { currentAddress.value=addr; locationDialogVisible.value=false; ElMessage.success('已切换地址'); };
-                const addNewAddress = () => {
-                    ElMessageBox.prompt('请输入新地址', '新增', {confirmButtonText:'确定',cancelButtonText:'取消'}).then(({value})=>{ if(value){ mockAddresses.value.unshift(value); selectAddress(value); }});
+                const openAddressDialog = async () => {
+                    await loadUserAddress();
+                    addressEdit.value = currentAddress.value || '';
+                    locationDialogVisible.value = true;
+                };
+                const loadUserAddress = async () => {
+                    try {
+                        if (!currentUser.value?.id) return;
+                        const res = await fetch('/user/getuseraddressbyuserid', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ user_id: currentUser.value.id })
+                        });
+                        if (!res.ok) throw new Error('获取地址失败');
+                        const data = await res.json();
+                        currentAddress.value = data.address || '';
+                    } catch (e) {
+                        ElMessage.error('地址加载失败');
+                    }
+                };
+                const saveAddress = async () => {
+                    try {
+                        const newAddr = (addressEdit.value || '').trim();
+                        if (!newAddr) { ElMessage.warning('地址不能为空'); return; }
+                        const res = await fetch('/user/updateuseraddressbyuserid', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ user_id: currentUser.value.id, address: newAddr })
+                        });
+                        if (!res.ok) throw new Error('保存失败');
+                        currentAddress.value = newAddr;
+                        locationDialogVisible.value = false;
+                        ElMessage.success('地址已更新');
+                    } catch (e) {
+                        ElMessage.error('更新地址失败');
+                    }
                 };
 
                 return {
@@ -872,7 +907,7 @@
                     shops, loadingShops, computedShops, currentShopId, currentShopName, handleSelectShop, backToHome,
                     menuItems, loadingMenu, addToCart, cart, cartTotal, increaseQuantity, decreaseQuantity, clearCart, submitOrder, submitting,
                     categories, searchKeyword, currentCategory, handleCategoryClick, currentSort, handleSort,
-                    locationDialogVisible, currentAddress, mockAddresses, selectAddress, addNewAddress,
+                    locationDialogVisible, currentAddress, addressEdit, openAddressDialog, saveAddress,
                     showOrderHistory, orders, loadingOrders, openOrderList, closeOrderList, cancelOrder, orderAgain,
                     contactDialogVisible, contactInfo, contactShop,
                     payOrder,

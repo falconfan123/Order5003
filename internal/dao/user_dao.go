@@ -38,3 +38,11 @@ func GetUserPhoneByUserID(db *gorm.DB, userID int) (*model.UserEntity, error) {
 	}
 	return &e, nil
 }
+
+// UpdateUserAddressByUserID 更新用户ID对应的地址
+func UpdateUserAddressByUserID(db *gorm.DB, userID int, address string) error {
+	if err := db.Model(&model.UserEntity{}).Where("user_id = ?", userID).Update("main_address", address).Error; err != nil {
+		return err
+	}
+	return nil
+}

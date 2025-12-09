@@ -72,6 +72,7 @@ type UserService interface {
 	GetUserPhoneByUserID(userID int) (string, error)
 	PayOrder(userID int, orderID int) error
 	CancelOrder(userID int, orderID int) error
+	UpdateUserAddressByUserID(userID int, address string) error
 }
 
 type DelivererService interface {
