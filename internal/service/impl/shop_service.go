@@ -338,3 +338,11 @@ func (s *GormStore) AddDish(shopID int, menuName string, dishName string, price 
 	}
 	return nil
 }
+
+// RefuseOrderByShop 商家拒单
+func (s *GormStore) RefuseOrderByShop(orderID int, shopID int) error {
+	if err := dao.RefuseOrderByShop(s.db, orderID, shopID); err != nil {
+		return errors.New("refuse order by shop failed")
+	}
+	return nil
+}

@@ -554,7 +554,7 @@
               <div style="margin-top:auto;display:flex;justify-content:flex-end;gap:6px;">
                 <template v-if="o.status === 2">
                   <el-button size="small" type="primary" @click="acceptOrder(o)" :loading="operLoading">接单</el-button>
-                  <el-button size="small" type="danger" plain @click="setStatus(o, 7)" :loading="operLoading">拒单</el-button>
+                  <el-button size="small" type="danger" plain @click="refuseOrder(o)" :loading="operLoading">拒单</el-button>
                 </template>
                 <template v-else-if="o.status === 8">
                   <el-button size="small" type="success" @click="markWaitingForDelivery(o)" :loading="operLoading">备餐完成</el-button>
@@ -1521,6 +1521,25 @@
           ElementPlus.ElMessage.success(`已标记备餐完成 #${orderId}`);
         } catch (e) {
           ElementPlus.ElMessage.error('操作失败：' + e.message);
+        } finally {
+          this.operLoading = false;
+        }
+      },
+      // 拒单（商家）
+      async refuseOrder(order) {
+        if (!order || !this.currentShop) return;
+        this.operLoading = true;
+        try {
+          const orderId = order.order_id || order.OrderID || order.id;
+          const shopId = this.currentShop.shop_id || this.currentShop.ShopID;
+          await this.request('/shop/refuseorderbyshop', {
+            method: 'POST',
+            body: JSON.stringify({ order_id: orderId, shop_id: shopId })
+          });
+          await this.loadOrders();
+          ElementPlus.ElMessage.success(`已拒单 #${orderId}`);
+        } catch (e) {
+          ElementPlus.ElMessage.error('拒单失败：' + e.message);
         } finally {
           this.operLoading = false;
         }

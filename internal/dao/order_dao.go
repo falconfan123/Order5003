@@ -70,3 +70,8 @@ func GetOrderByOrderID(db *gorm.DB, orderID int) (*model.OrderEntity, error) {
 func DeleteOrder(db *gorm.DB, orderID int) error {
 	return db.Delete(&model.OrderEntity{}, orderID).Error
 }
+
+// RefuseOrderByShop 商家拒单
+func RefuseOrderByShop(db *gorm.DB, orderID int, shopID int) error {
+	return db.Model(&model.OrderEntity{}).Where("order_id = ? AND shop_id = ?", orderID, shopID).Update("status", model.OrderStatusShopCancelled).Error
+}

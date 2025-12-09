@@ -500,3 +500,26 @@ func (h *ShopHandler) AddDish(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Dish added"})
 }
+
+// RefuseOrderByShop 商家拒单
+func (h *ShopHandler) RefuseOrderByShop(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		return
+	}
+	var request struct {
+		OrderID int `json:"order_id"`
+		ShopID  int `json:"shop_id"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	err := h.svc.RefuseOrderByShop(request.OrderID, request.ShopID)
+	logger.Info("err", err)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Order refused"})
+}

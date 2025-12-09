@@ -360,6 +360,7 @@
                     <div class="filter-tag" :class="{active: currentSort==='default'}" @click="handleSort('default')">综合排序</div>
                     <div class="filter-tag" :class="{active: currentSort==='distance'}" @click="handleSort('distance')">距离最近</div>
                     <div class="filter-tag" :class="{active: currentSort==='price'}" @click="handleSort('price')">配送费最低</div>
+                    <el-button type="primary" plain size="small" :loading="loadingShops" @click="refreshShops" style="margin-left:auto;">刷新商家<el-icon style="margin-left:6px;"><Refresh /></el-icon></el-button>
                 </div>
                 <div class="shop-grid" v-loading="loadingShops">
                     <div v-for="shop in computedShops" :key="shop.shop_id" class="shop-card" @click="handleSelectShop(shop)">
@@ -387,6 +388,7 @@
                     <div style="margin-bottom:16px;display:flex;align-items:center;gap:10px;">
                         <el-button circle @click="backToHome"><el-icon><back /></el-icon></el-button>
                         <h2 style="margin:0;line-height:1.2;">{{ currentShopName }}</h2>
+                        <el-button circle :loading="loadingMenu" @click="refreshMenuItems" title="刷新菜单"><el-icon><Refresh /></el-icon></el-button>
                     </div>
                     <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:15px;">
                         <div v-for="dish in menuItems" :key="dish.id" style="background:white;border-radius:8px;overflow:hidden;box-shadow:0 2px 5px rgba(0,0,0,0.05);display:flex;flex-direction:column;">
@@ -552,6 +554,15 @@
                     })
                     .catch(()=>ElMessage.error('获取菜单失败'))
                     .finally(()=>{ loadingMenu.value=false; });
+                };
+
+                const refreshShops = () => {
+                    fetchShops();
+                };
+                const refreshMenuItems = () => {
+                    if (currentShopId.value) {
+                        fetchMenu(currentShopId.value);
+                    }
                 };
 
                 // 交互
@@ -904,8 +915,8 @@
 
                 return {
                     currentUser, loginForm, loading, handleLogin, logout, handleUserCommand,
-                    shops, loadingShops, computedShops, currentShopId, currentShopName, handleSelectShop, backToHome,
-                    menuItems, loadingMenu, addToCart, cart, cartTotal, increaseQuantity, decreaseQuantity, clearCart, submitOrder, submitting,
+                    shops, loadingShops, computedShops, currentShopId, currentShopName, handleSelectShop, backToHome, refreshShops,
+                    menuItems, loadingMenu, addToCart, cart, cartTotal, increaseQuantity, decreaseQuantity, clearCart, submitOrder, submitting, refreshMenuItems,
                     categories, searchKeyword, currentCategory, handleCategoryClick, currentSort, handleSort,
                     locationDialogVisible, currentAddress, addressEdit, openAddressDialog, saveAddress,
                     showOrderHistory, orders, loadingOrders, openOrderList, closeOrderList, cancelOrder, orderAgain,

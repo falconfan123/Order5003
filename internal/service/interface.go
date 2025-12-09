@@ -62,6 +62,8 @@ type ShopService interface {
 	GetShopInfoForUser(shopID int) (bizmodel.Shop, error)
 	//新增菜品
 	AddDish(shopID int, menuName string, dishName string, price float64, stock int, status int) error
+	//商家拒单
+	RefuseOrderByShop(orderID int, shopID int) error
 }
 
 type UserService interface {
