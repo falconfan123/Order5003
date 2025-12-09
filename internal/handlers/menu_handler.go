@@ -53,3 +53,27 @@ func (h *MenuHandler) GetDishesByMenuID(c *gin.Context) {
 	}
 	c.JSON(200, dishes)
 }
+
+// UpdateMenu 更新菜单
+func (h *MenuHandler) UpdateMenu(c *gin.Context) {
+	if c.Request.Method != "POST" {
+		c.JSON(405, gin.H{"error": "method not allowed"})
+		return
+	}
+	var request struct {
+		Action   string `json:"action" binding:"required,oneof=add delete update"`
+		MenuID   int    `json:"menu_id"`
+		MenuName string `json:"menu_name"`
+		Status   int    `json:"status"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request body"})
+		return
+	}
+	err := h.svc.UpdateMenu(c, request.Action, request.MenuID, request.MenuName, request.Status)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, gin.H{"message": "menu updated"})
+}

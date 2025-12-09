@@ -580,6 +580,15 @@
               <el-select v-model="selectedMenuId" size="small" style="width:180px;" placeholder="选择菜单" @change="onMenuChange" :disabled="menuLoading">
                 <el-option v-for="m in menus" :key="m.menu_id" :label="m.menu_name" :value="m.menu_id" />
               </el-select>
+              <el-button type="primary" size="small" @click="openAddMenu" :loading="operLoading">
+                <el-icon><Plus /></el-icon>新增菜单
+              </el-button>
+              <el-button size="small" @click="openEditMenu" :disabled="!selectedMenuId || menuLoading" :loading="operLoading">
+                <el-icon><Edit /></el-icon>编辑菜单
+              </el-button>
+              <el-button size="small" type="danger" plain @click="deleteMenu" :disabled="!selectedMenuId || menuLoading" :loading="operLoading">
+                <el-icon><Delete /></el-icon>删除菜单
+              </el-button>
               <el-button type="primary" size="small" @click="addDish" :loading="operLoading">
                 <el-icon><Plus /></el-icon>新增菜品
               </el-button>
@@ -726,8 +735,33 @@
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="editDialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="saveDishEdit" :loading="operLoading">保 存</el-button>
+          <el-button @click="editDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="saveDishEdit" :loading="operLoading">保存</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 菜单编辑弹窗 -->
+    <el-dialog
+      v-model="menuEditDialogVisible"
+      :title="menuEditForm.menu_id ? '编辑菜单' : '新增菜单'"
+      width="420px"
+    >
+      <el-form :model="menuEditForm" label-width="80px">
+        <el-form-item label="菜单ID">
+          <span>{{ menuEditForm.menu_id || '新增菜单' }}</span>
+        </el-form-item>
+        <el-form-item label="菜单名称">
+          <el-input v-model="menuEditForm.menu_name" placeholder="请输入菜单名称"></el-input>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-switch v-model="menuEditForm.status" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="停用"></el-switch>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="menuEditDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="saveMenuEdit" :loading="operLoading">保存</el-button>
         </span>
       </template>
     </el-dialog>
@@ -820,6 +854,12 @@
           dish_name: '',
           price: 0,
           stock: 0,
+          status: 1
+        },
+        menuEditDialogVisible: false,
+        menuEditForm: {
+          menu_id: null,
+          menu_name: '',
           status: 1
         },
         // 店铺资料编辑弹窗
@@ -1123,7 +1163,8 @@
           this.menus = Array.isArray(menuRes) ? menuRes.map(m => ({
             menu_id: m.menu_id || m.MenuID || m.id,
             shop_id: m.shop_id || m.ShopID,
-            menu_name: m.menu_name || m.MenuName || '未命名菜单'
+            menu_name: m.menu_name || m.MenuName || '未命名菜单',
+            status: (m.status !== undefined && m.status !== null) ? m.status : ((m.Status !== undefined && m.Status !== null) ? m.Status : 1)
           })) : [];
 
           // 2. 默认选中第一个菜单
@@ -1143,6 +1184,81 @@
         if (!menuId || !this.currentShop) return;
         this.selectedMenuId = menuId;
         await this.loadDishesForMenu(menuId);
+      },
+      openAddMenu() {
+        if (!this.currentShop) return;
+        this.menuEditForm = {
+          menu_id: null,
+          menu_name: '',
+          status: 1
+        };
+        this.menuEditDialogVisible = true;
+      },
+      openEditMenu() {
+        if (!this.currentShop || !this.selectedMenuId) return;
+        const m = this.menus.find(x => x.menu_id === this.selectedMenuId);
+        if (!m) return;
+        this.menuEditForm = {
+          menu_id: m.menu_id,
+          menu_name: m.menu_name || '',
+          status: Number(m.status ?? 1)
+        };
+        this.menuEditDialogVisible = true;
+      },
+      async saveMenuEdit() {
+        if (!this.currentShop) return;
+        if (!this.menuEditForm.menu_name || !this.menuEditForm.menu_name.trim()) {
+          ElementPlus.ElMessage.warning('菜单名称不能为空');
+          return;
+        }
+        this.operLoading = true;
+        try {
+          const isUpdate = !!this.menuEditForm.menu_id;
+          const statusRaw = (this.menuEditForm.status ?? 1);
+          const statusNum = Number(statusRaw);
+          const finalStatus = statusNum === 0 ? 0 : 1;
+          const payload = isUpdate
+            ? { action: 'update', menu_id: this.menuEditForm.menu_id, menu_name: this.menuEditForm.menu_name.trim(), status: finalStatus }
+            : { action: 'add', menu_id: this.currentShop.shop_id, menu_name: this.menuEditForm.menu_name.trim(), status: finalStatus };
+          await this.request('/menu/updatemenu', { method: 'POST', body: JSON.stringify(payload) });
+          await this.loadMenus();
+          if (!isUpdate) {
+            const created = this.menus.find(m => (m.menu_name || '') === this.menuEditForm.menu_name);
+            if (created) {
+              this.selectedMenuId = created.menu_id;
+              await this.loadDishesForMenu(this.selectedMenuId);
+            }
+          }
+          this.menuEditDialogVisible = false;
+          ElementPlus.ElMessage.success(isUpdate ? '菜单已更新' : '菜单已新增');
+        } catch (e) {
+          ElementPlus.ElMessage.error('菜单保存失败：' + e.message);
+        } finally {
+          this.operLoading = false;
+        }
+      },
+      async deleteMenu() {
+        if (!this.currentShop || !this.selectedMenuId) return;
+        try {
+          await ElementPlus.ElMessageBox.confirm('确定删除当前菜单吗？其下菜品关联也将清除', '提示', { type: 'warning' });
+        } catch (_) { return; }
+        this.operLoading = true;
+        try {
+          await this.request('/menu/updatemenu', { method: 'POST', body: JSON.stringify({ action: 'delete', menu_id: this.selectedMenuId }) });
+          await this.loadMenus();
+          if (this.menus.length > 0) {
+            this.selectedMenuId = this.menus[0].menu_id;
+            await this.loadDishesForMenu(this.selectedMenuId);
+          } else {
+            this.selectedMenuId = null;
+            this.dishes = [];
+          }
+          ElementPlus.ElMessage.success('菜单已删除');
+        } catch (e) {
+          ElementPlus.ElMessage.error('删除失败：' + e.message);
+        } finally {
+          this.operLoading = false;
+        }
       },
       // 加载菜单下的菜品
       async loadDishesForMenu(menuId) {

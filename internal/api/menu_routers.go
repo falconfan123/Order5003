@@ -12,4 +12,6 @@ func RegisterMenuRoutes(r *gin.Engine, h *handlers.MenuHandler) {
 	g.POST("/getmenubyshopid", func(c *gin.Context) { h.GetMenuByShopID(c) })
 	//得到menuid下的所有菜品
 	g.POST("/getdishesbymenuid", func(c *gin.Context) { h.GetDishesByMenuID(c) })
+	// 更改菜单
+	g.POST("/updatemenu", func(c *gin.Context) { h.UpdateMenu(c) })
 }

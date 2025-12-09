@@ -3,8 +3,12 @@ package impl
 import (
 	"Order5003/internal/bizmodel"
 	"Order5003/internal/dao"
+	"Order5003/internal/logger"
+	"Order5003/internal/model"
 	"context"
 	"errors"
+
+	"go.uber.org/zap"
 )
 
 func (s *GormStore) GetMenuByShopID(ctx context.Context, shopID int) ([]bizmodel.Menu, error) {
@@ -43,4 +47,35 @@ func (s *GormStore) GetDishesByMenuID(ctx context.Context, menuID int) ([]bizmod
 		out = append(out, *dish)
 	}
 	return out, nil
+}
+
+func (s *GormStore) UpdateMenu(ctx context.Context, action string, menuID int, menuName string, status int) error {
+	switch action {
+	case "add":
+		//新增菜单
+		err := dao.CreateMenu(s.db, model.MenuEntity{
+			ShopID:   menuID,
+			MenuName: menuName,
+			Status:   int8(status),
+		})
+		if err != nil {
+			return err
+		}
+	case "delete":
+		//删除菜单
+		err := dao.DeleteMenu(s.db, menuID)
+		if err != nil {
+			return err
+		}
+	case "update":
+		logger.Info("更新菜单", zap.Int("menuID", menuID), zap.String("menuName", menuName), zap.Int("status", status))
+		//更新菜单
+		err := dao.UpdateMenu(s.db, menuID, menuName, int8(status))
+		if err != nil {
+			return err
+		}
+	default:
+		return errors.New("invalid action")
+	}
+	return nil
 }

@@ -10,6 +10,7 @@ import (
 type MenuService interface {
 	GetMenuByShopID(ctx context.Context, shopID int) ([]bizmodel.Menu, error)
 	GetDishesByMenuID(ctx context.Context, menuID int) ([]bizmodel.Dishes, error)
+	UpdateMenu(ctx context.Context, action string, menuID int, menuName string, status int) error
 }
 
 type OrderService interface {
